@@ -220,14 +220,16 @@
     }
     /* 關閉訊息後，保證輸入框存在 */
     function ensureInputsForCurrentStep(){
-      if(currentStep===1 && isFilled(['row2_ten','row2_units'])){
-        // Step 1 已完成，預先生成 Step 2 的輸入框
-        ensureInputForTarget('remainder_result', problem.remainder);
-      } else if(currentStep===2 && isFilled(['subtract_10','subtract_subtrahend','remainder_result'])){
-        // Step 2 已完成，預先生成 Step 3 的輸入框
-        ensureInputForTarget('final_answer', problem.difference);
-      } else if(currentStep===1){
+      if(currentStep===1){
         ensureInputForTarget('row2_units', problem.decomposedUnits);
+      }else if(currentStep===2){
+        const t10 = dropTargets.find(t=>t.id==='subtract_10')?.filled;
+        const ts  = dropTargets.find(t=>t.id==='subtract_subtrahend')?.filled;
+        if(t10 && ts) ensureInputForTarget('remainder_result', problem.remainder);
+      }else if(currentStep===3){
+        const au = dropTargets.find(t=>t.id==='add_units')?.filled;
+        const ar = dropTargets.find(t=>t.id==='add_remainder')?.filled;
+        if(au && ar) ensureInputForTarget('final_answer', problem.difference);
       }
     }
     messageCloseButton.addEventListener('click',()=>{
@@ -247,15 +249,15 @@
     let FONT_SIZE_LARGE=30, FONT_SIZE_MEDIUM=22, FONT_SIZE_SMALL=16;
 
     function applyScale(w){
-      /* 調整：手機最低縮到 0.70；基底字體也調大 */
-      SCALE = Math.max(0.70, Math.min(1.0, w/600));
+      /* 更保守：小手機最低縮到 0.58 */
+      SCALE = Math.max(0.58, Math.min(1.0, w/600));
       BLOCK_RADIUS = Math.round(26*SCALE);
       TOP_SCALE    = 1.22;
       TARGET_WIDTH = Math.round(96*SCALE);
       TARGET_HEIGHT= Math.round(68*SCALE);
-      FONT_SIZE_LARGE  = Math.round(34*SCALE);  // 從 30 調整為 34
-      FONT_SIZE_MEDIUM = Math.round(26*SCALE);  // 從 22 調整為 26
-      FONT_SIZE_SMALL  = Math.max(14, Math.round(18*SCALE)); // 從 16 調整為 18
+      FONT_SIZE_LARGE  = Math.round(30*SCALE);
+      FONT_SIZE_MEDIUM = Math.round(22*SCALE);
+      FONT_SIZE_SMALL  = Math.max(14, Math.round(16*SCALE));
     }
 
     /* 配色（4色） */
@@ -516,6 +518,8 @@
       const tenTile=draggableBlocks.find(b=>b.value===10), tenTarget=dropTargets.find(t=>t.id==='row2_ten');
       if(tenTile && tenTarget){ tenTarget.filled=true; tenTarget.currentValue=10; tenTile.x=tenTarget.x+tenTarget.width/2; tenTile.y=tenTarget.y+tenTarget.height/2; draggableBlocks=draggableBlocks.filter(b=>b!==tenTile); }
       showMessage('開始囉！',`把 ${problem.minuend} 分成 10 和「個位數」。`);
+      /* 立刻建立第一步輸入框（避免手機上被訊息鎖時沒生成） */
+      ensureInputsForCurrentStep();
       draw();
     }
     function nextProblem(){ initGame(); }
