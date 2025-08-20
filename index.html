@@ -30,7 +30,8 @@
     /* Game area */
     .game-container{
       width:100%;
-      max-width:90vh;           /* ← 以視窗高度的 90% 限制寬度 */
+      /* 重要：寬度不超過視窗高 90%、不超過 980px、也不超過視窗寬 */
+      max-width: min(90vh, 980px, 100vw);
       margin:0 auto; padding:12px; background:transparent; position:relative;
     }
     canvas{
@@ -72,10 +73,9 @@
       <div class="actions">
         <button id="goPlay" class="btn-solid">開始遊戲</button>
         <button id="goHowTo" class="btn-ghost">遊戲說明</button>
-<footer style="display:block; width:100%; margin-top:20px; font-size:0.8em; color:#666; text-align:center;">
-  © 2025 Your Name. All rights reserved.
-</footer>
-
+        <footer style="display:block; width:100%; margin-top:20px; font-size:0.8em; color:#666; text-align:center;">
+          © 2025 Christina Yu. All rights reserved.
+        </footer>
       </div>
     </div>
   </div>
@@ -120,7 +120,7 @@
     <button id="messageCloseButton">確定</button>
   </div>
 
-  <!-- SFX (包含：correct / wrong / cheer / celebration) -->
+  <!-- SFX (correct / wrong / cheer / celebration) -->
   <script>
     const SFX = (() => {
       let ctx, unlocked=false, muted=false;
@@ -140,14 +140,14 @@
       function celebration(){ // ~2.4s
         unlock();
         const steps = [
-          { f: 784,  t: 0.00, d: 0.20 }, // G5
-          { f: 988,  t: 0.18, d: 0.20 }, // B5
-          { f: 1175, t: 0.36, d: 0.24 }, // D6
-          { f: 1568, t: 0.62, d: 0.26 }, // G6
-          { f: 1760, t: 0.90, d: 0.28 }, // A6
-          { f: 1976, t: 1.20, d: 0.30 }, // B6
-          { f: 2349, t: 1.52, d: 0.32 }, // D7
-          { f: 2637, t: 1.86, d: 0.36 }, // E7
+          { f: 784,  t: 0.00, d: 0.20 },
+          { f: 988,  t: 0.18, d: 0.20 },
+          { f: 1175, t: 0.36, d: 0.24 },
+          { f: 1568, t: 0.62, d: 0.26 },
+          { f: 1760, t: 0.90, d: 0.28 },
+          { f: 1976, t: 1.20, d: 0.30 },
+          { f: 2349, t: 1.52, d: 0.32 },
+          { f: 2637, t: 1.86, d: 0.36 },
         ];
         steps.forEach(s => tone(s.f, s.d, 0.10, 'triangle', s.t));
       }
@@ -172,7 +172,7 @@
       frontPage.style.display='none';
       howToPage.style.display='none';
       gameContainer.style.display='block';
-      setTimeout(resizeCanvas, 0);
+      setTimeout(()=>resizeCanvas(true), 0);   /* 首次載入 reinit */
     }
     showFront();
     goPlay.onclick=()=>{SFX.unlock();showGame();};
@@ -471,9 +471,56 @@
       draw();
     }
 
+    /* ==== 只重排不重置（避免手機一 resize 就洗掉進度） ==== */
+    let lastCanvasW=0, lastCanvasH=0;
+    function relayoutWithoutReset(){
+      const rect=canvasRect(); const w=rect.width, h=rect.height;
+      applyScale(w);
+      Y_POS_PROBLEM=h*0.12; Y_POS_ROW2=h*0.38; Y_POS_ROW3=h*0.63; Y_POS_ROW4=h*0.86; Y_POS_TRAY=Math.min(h - 10 - 14*h/800, h*0.95);
+      layoutTop();
+
+      const cx=w/2;
+      const OFFSET_ROW2_LEFT  = -TARGET_WIDTH*0.6;
+      const OFFSET_ROW3_RIGHT =  TARGET_WIDTH*0.6;
+      const row2_units_centerX = cx - TARGET_WIDTH*1.05 + OFFSET_ROW2_LEFT;
+      const row2_10_centerX    = cx + TARGET_WIDTH*0.15 + OFFSET_ROW2_LEFT;
+
+      const newTargets = [
+        {id:'row2_units',x:row2_units_centerX-TARGET_WIDTH/2,y:Y_POS_ROW2-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.decomposedUnits,color:COLOR_MAIN},
+        {id:'row2_ten',  x:row2_10_centerX  -TARGET_WIDTH/2,y:Y_POS_ROW2-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:10,color:COLOR_MAIN},
+
+        {id:'subtract_10',        x:cx - TARGET_WIDTH*1.5 - TARGET_WIDTH/2 + OFFSET_ROW3_RIGHT,y:Y_POS_ROW3-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:10,color:COLOR_MAIN},
+        {id:'subtract_subtrahend',x:cx - TARGET_WIDTH*0.2 - TARGET_WIDTH/2 + OFFSET_ROW3_RIGHT,y:Y_POS_ROW3-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.subtrahend,color:COLOR_SUBTRAHEND},
+        {id:'remainder_result',   x:cx + TARGET_WIDTH*1.2 - TARGET_WIDTH/2 + OFFSET_ROW3_RIGHT,y:Y_POS_ROW3-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.remainder,color:COLOR_REMAINDER},
+
+        {id:'add_units',    x:cx - TARGET_WIDTH*1.5 - TARGET_WIDTH/2,y:Y_POS_ROW4-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.decomposedUnits,color:COLOR_MAIN},
+        {id:'add_remainder',x:cx - TARGET_WIDTH*0.2 - TARGET_WIDTH/2,y:Y_POS_ROW4-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.remainder,color:COLOR_REMAINDER},
+        {id:'final_answer', x:cx + TARGET_WIDTH*1.2 - TARGET_WIDTH/2,y:Y_POS_ROW4-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.difference,color:COLOR_ANSWER},
+
+        {id:'answer', x:topPositions.answerCenter - BLOCK_RADIUS*TOP_SCALE, y:Y_POS_PROBLEM - BLOCK_RADIUS*TOP_SCALE, width:BLOCK_RADIUS*TOP_SCALE*2, height:BLOCK_RADIUS*TOP_SCALE*2, expectedValue:problem.difference, color:COLOR_ANSWER}
+      ];
+
+      // 帶回舊狀態
+      newTargets.forEach(nt=>{
+        const old=dropTargets.find(t=>t.id===nt.id);
+        nt.filled=old?.filled||false;
+        nt.currentValue=old?.currentValue??null;
+      });
+      dropTargets=newTargets;
+
+      // 依縮放比微調已存在圓的位置
+      if(lastCanvasW && lastCanvasH){
+        const sx=w/lastCanvasW, sy=h/lastCanvasH;
+        draggableBlocks.forEach(b=>{ b.x*=sx; b.y*=sy; b.originalX*=sx; b.originalY*=sy; });
+      }
+      lastCanvasW=w; lastCanvasH=h;
+
+      positionAllInputs();
+      draw();
+    }
+
     function startFlow(){
       if(currentStep!==0) return; currentStep=1; startButton.disabled=true; SFX.unlock();
-      // 自動把 10 放上第二行
       const tenTile=draggableBlocks.find(b=>b.value===10), tenTarget=dropTargets.find(t=>t.id==='row2_ten');
       if(tenTile && tenTarget){ tenTarget.filled=true; tenTarget.currentValue=10; tenTile.x=tenTarget.x+tenTarget.width/2; tenTile.y=tenTarget.y+tenTarget.height/2; draggableBlocks=draggableBlocks.filter(b=>b!==tenTile); }
       showMessage('開始囉！',`把 ${problem.minuend} 分成 10 和「個位數」。`); draw();
@@ -490,13 +537,13 @@
       canvas.addEventListener('touchend',()=>drop());
     }
 
-    /* Resize —— 用容器寬度，容器已被 CSS 限制為 max-width: 90vh */
-    function resizeCanvas(){
+    /* ====== Resize：首次 reinit，其後只重排 ====== */
+    function resizeCanvas(reinit=false){
       const rect = gameContainer.getBoundingClientRect();
-      const displayW = Math.floor(rect.width);               // ← 受 .game-container: max-width:90vh 限制
+      const displayW = Math.floor(rect.width);
       const displayH = Math.min(
-        Math.round(displayW * 1.08),                         // 既有比例
-        Math.round(window.innerHeight * 0.90)                // 仍不超過 90vh
+        Math.round(displayW * 1.08),
+        Math.round(window.innerHeight * 0.90)
       );
       const dpr = window.devicePixelRatio || 1;
       canvas.style.width  = displayW + 'px';
@@ -504,19 +551,21 @@
       canvas.width  = Math.round(displayW * dpr);
       canvas.height = Math.round(displayH * dpr);
       ctx.setTransform(dpr,0,0,dpr,0,0);
-      applyScale(displayW);
-      initGame();
-      positionAllInputs();
+
+      if(reinit){
+        applyScale(displayW);
+        initGame();         // 首次載入才重置
+      }else{
+        relayoutWithoutReset(); // 之後只重排
+      }
     }
 
-    /* Wire buttons */
-
+    /* Wire buttons（不要重複宣告變數） */
     startButton.addEventListener('click',()=>{SFX.unlock(); startFlow();});
     nextProblemButton.addEventListener('click',nextProblem);
 
-    window.addEventListener('load',()=>{addPointerEvents(); resizeCanvas();});
-    window.addEventListener('resize',resizeCanvas);
+    window.addEventListener('load',()=>{addPointerEvents(); resizeCanvas(true);});
+    window.addEventListener('resize',()=>resizeCanvas(false));
   </script>
 </body>
 </html>
-
