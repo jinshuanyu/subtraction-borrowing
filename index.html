@@ -17,7 +17,7 @@
     .btn-solid{background:#10b981;color:#fff;border:none;border-radius:12px;padding:12px 18px;font-weight:800;cursor:pointer}
     .btn-ghost{background:#eef2ff;color:#4f46e5;border:none;border-radius:12px;padding:12px 18px;font-weight:800;cursor:pointer}
 
-    /* Counter & celebration (visual only) */
+    /* Counter & celebration */
     #roundsBadge{position:fixed;right:10px;top:10px;z-index:1600;background:#6a0dad;color:#fff;font-weight:700;padding:6px 10px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.18);font-size:14px;}
     #confettiCanvas{position:fixed;inset:0;z-index:2200;pointer-events:none;display:none;}
     #applauseOverlay{position:fixed;inset:0;display:none;z-index:2300;align-items:center;justify-content:center;pointer-events:none;}
@@ -30,7 +30,7 @@
     /* Game area */
     .game-container{
       width:100%;
-      /* 不超過視窗高 90%、不超過 980px、也不超過螢幕寬 */
+      /* 手機安全：不超過視窗高 90%、不超過 980px、也不超過螢幕寬 */
       max-width:min(90vh, 980px, 100vw);
       margin:0 auto; padding:12px; background:transparent; position:relative;
     }
@@ -44,7 +44,7 @@
     .btn{padding:8px 14px;font-size:.95rem;font-weight:600;border-radius:10px;border:none;color:#fff;background:#6a0dad}
     .btn:disabled{opacity:.5;cursor:not-allowed}
 
-    /* Floating inputs in target boxes */
+    /* Floating inputs：直接蓋在目標框內 */
     .floating-input{
       position:absolute;z-index:50;outline:none;border:none;border-radius:10px;
       background:rgba(255,255,255,.96);text-align:center;font-weight:800;color:#111827;
@@ -120,7 +120,7 @@
     <button id="messageCloseButton">確定</button>
   </div>
 
-  <!-- SFX (包含：correct / wrong / cheer / celebration) -->
+  <!-- SFX -->
   <script>
     const SFX = (() => {
       let ctx, unlocked=false, muted=false;
@@ -137,7 +137,7 @@
       function correct(){ unlock(); tone(988,.12,.12,'triangle',0.00); tone(1318,.10,.10,'triangle',0.10); }
       function wrong(){ unlock(); tone(220,.22,.14,'sawtooth',0.00); }
       function cheer(){ unlock(); tone(880,.16,.12,'triangle',0.00); tone(1047,.16,.11,'triangle',0.16); tone(1318,.22,.11,'triangle',0.32); }
-      function celebration(){ // ~2.4s
+      function celebration(){
         unlock();
         const steps = [
           { f: 784,  t: 0.00, d: 0.20 },
@@ -207,8 +207,28 @@
     const messageBox=document.getElementById('messageBox'), messageTitle=document.getElementById('messageTitle'), messageContent=document.getElementById('messageContent'), messageCloseButton=document.getElementById('messageCloseButton');
 
     let uiLocked=false;
-    function showMessage(title,content){uiLocked=true;messageTitle.textContent=title;messageContent.textContent=content;messageBox.style.display='block';}
-    messageCloseButton.addEventListener('click',()=>{messageBox.style.display='none';uiLocked=false;positionAllInputs();draw();});
+    function showMessage(title,content){
+      uiLocked=true;
+      messageTitle.textContent=title; messageContent.textContent=content; messageBox.style.display='block';
+    }
+    function ensureInputsForCurrentStep(){
+      if(currentStep===1){
+        ensureInputForTarget('row2_units', problem.decomposedUnits);
+      }else if(currentStep===2){
+        const t10 = dropTargets.find(t=>t.id==='subtract_10')?.filled;
+        const ts  = dropTargets.find(t=>t.id==='subtract_subtrahend')?.filled;
+        if(t10 && ts) ensureInputForTarget('remainder_result', problem.remainder);
+      }else if(currentStep===3){
+        const au = dropTargets.find(t=>t.id==='add_units')?.filled;
+        const ar = dropTargets.find(t=>t.id==='add_remainder')?.filled;
+        if(au && ar) ensureInputForTarget('final_answer', problem.difference);
+      }
+    }
+    messageCloseButton.addEventListener('click',()=>{
+      messageBox.style.display='none'; uiLocked=false;
+      ensureInputsForCurrentStep();
+      positionAllInputs(); draw();
+    });
 
     // state
     let problem={}, currentStep=0, draggableBlocks=[], dropTargets=[], activeDraggable=null, offsetX, offsetY;
@@ -217,11 +237,11 @@
     // responsive sizes (base * SCALE)
     let SCALE=1;
     let BLOCK_RADIUS=26, TOP_SCALE=1.22, TARGET_WIDTH=96, TARGET_HEIGHT=68;
-    let FONT_SIZE_LARGE=30, FONT_SIZE_MEDIUM=22, FONT_SIZE_SMALL=16; /* 說明字大一些 */
+    let FONT_SIZE_LARGE=30, FONT_SIZE_MEDIUM=22, FONT_SIZE_SMALL=16;
 
     function applyScale(w){
-      // 基準寬度 600，限制 0.68 ~ 1.0
-      SCALE = Math.max(0.68, Math.min(1.0, w/600));
+      // 基準 600，讓小手機更保守：最低縮到 0.60
+      SCALE = Math.max(0.60, Math.min(1.0, w/600));
       BLOCK_RADIUS = Math.round(26*SCALE);
       TOP_SCALE    = 1.22;
       TARGET_WIDTH = Math.round(96*SCALE);
@@ -318,11 +338,10 @@
       if(USE_INPUT_MODE && aU.filled && aR.filled){ ensureInputForTarget('final_answer',problem.difference); }
     }
 
-    /* ---------- Inputs (手機即時提交修正) ---------- */
+    /* ---------- Inputs（手機：即時提交；不再被 uiLocked 擋住生成） ---------- */
     function ensureInputForTarget(targetId, expectedValue){
       const t=dropTargets.find(x=>x.id===targetId);
       if(!t || t.filled || inputMap.has(targetId)) return;
-      if(uiLocked) return;
       if(!depsReadyForInput(targetId)) return;
 
       const inp=document.createElement('input');
@@ -331,13 +350,10 @@
       gameContainer.appendChild(inp); inputMap.set(targetId,inp);
 
       let typed=false;
-
-      // ✅ 新增：輸入正確值時，立刻自動提交（解決手機無 Enter/blur 的卡住）
       function tryAutoCommit(){
         const v=parseInt(inp.value,10);
         if(!isNaN(v) && v===expectedValue){ commit(); }
       }
-
       function commit(){
         const val=parseInt(inp.value,10);
         if(isNaN(val)){ markWrong(inp); return; }
@@ -348,7 +364,6 @@
           advanceStepsIfReady(); draw();
         }else{ markWrong(inp); }
       }
-
       inp.addEventListener('input',()=>{typed=true; tryAutoCommit();});
       inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); commit(); }});
       inp.addEventListener('blur',()=>{ if(typed && inp.value.trim()!==''){ commit(); }});
@@ -363,7 +378,7 @@
       const sx=rect.width/logicalW, sy=rect.height/logicalH; const cr=gameContainer.getBoundingClientRect();
       const left=rect.left+t.x*sx, top=rect.top+t.y*sy, width=t.width*sx, height=t.height*sy;
       inp.style.left=(left-cr.left)+'px'; inp.style.top=(top-cr.top)+'px'; inp.style.width=width+'px'; inp.style.height=height+'px';
-      const fontPx=Math.max(16,Math.round(height*0.48)); inp.style.fontSize=fontPx+'px'; inp.style.lineHeight=height+'px';
+      const fontPx=Math.max(16,Math.round(height*0.50)); inp.style.fontSize=fontPx+'px'; inp.style.lineHeight=height+'px';
     }
     function positionAllInputs(){ for(const key of inputMap.keys()){ const t=dropTargets.find(x=>x.id===key); if(!t||t.filled) continue; positionInputOverTarget(key);} }
     function clearAllInputs(){ for(const el of inputMap.values()){ try{el.remove();}catch{} } inputMap.clear(); }
@@ -485,7 +500,9 @@
       // 自動把 10 放上第二行
       const tenTile=draggableBlocks.find(b=>b.value===10), tenTarget=dropTargets.find(t=>t.id==='row2_ten');
       if(tenTile && tenTarget){ tenTarget.filled=true; tenTarget.currentValue=10; tenTile.x=tenTarget.x+tenTarget.width/2; tenTile.y=tenTarget.y+tenTarget.height/2; draggableBlocks=draggableBlocks.filter(b=>b!==tenTile); }
-      showMessage('開始囉！',`把 ${problem.minuend} 分成 10 和「個位數」。`); draw();
+      showMessage('開始囉！',`把 ${problem.minuend} 分成 10 和「個位數」。`);
+      ensureInputsForCurrentStep(); /* ← 立刻建立第一步輸入框，避免手機上先鎖住時沒生成 */
+      draw();
     }
     function nextProblem(){ initGame(); }
 
@@ -524,6 +541,7 @@
 
     window.addEventListener('load',()=>{addPointerEvents(); resizeCanvas();});
     window.addEventListener('resize',resizeCanvas);
+    window.addEventListener('orientationchange',()=>setTimeout(resizeCanvas, 50));
   </script>
 </body>
 </html>
