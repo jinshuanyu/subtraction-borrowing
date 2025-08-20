@@ -24,7 +24,7 @@
     .btn-ghost{ background:#eef2ff; color:#4f46e5; border:none; border-radius:12px; padding:12px 18px; font-weight:800; cursor:pointer }
 
     /* 計數與慶祝（純視覺） */
-    #roundsBadge{ position:fixed; right:10px; top:10px; z-index:1600; background:#6a0dad; color:#fff; font-weight:700; padding:6px 10px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); font-size:14px; }
+    #roundsBadge{ position:fixed; right:8px; top:8px; z-index:1600; background:#6a0dad; color:#fff; font-weight:700; padding:4px 8px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); font-size:12px; }
     #confettiCanvas{ position:fixed; inset:0; z-index:2200; pointer-events:none; display:none; }
     #applauseOverlay{ position:fixed; inset:0; display:none; z-index:2300; align-items:center; justify-content:center; pointer-events:none; }
     #applauseInner{ background:rgba(255,255,255,.92); border-radius:16px; padding:18px 22px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.18); animation:popIn .35s ease-out; }
@@ -42,6 +42,9 @@
       /* 新單位優先（會覆蓋上面那行） */
       max-width: min(100svw, 90svh, 980px);
       margin:0 auto; padding:12px; background:transparent; position:relative;
+      /* 手機上稍微往下和往左移動，避免與計數器重疊 */
+      margin-top: 8px;
+      padding-left: 8px;
     }
 
     canvas{
@@ -131,8 +134,32 @@
   <script>
     const SFX = (() => {
       let ctx, unlocked=false, muted=false;
-      function ensureCtx(){ if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)(); return ctx; }
-      async function unlock(){ if(unlocked) return; const c=ensureCtx(); try{ if(c.state==='suspended') await c.resume(); }catch{} unlocked=true; }
+      function ensureCtx(){ 
+        if(!ctx) {
+          ctx=new (window.AudioContext||window.webkitAudioContext)();
+          // 立即嘗試解鎖音頻上下文
+          if(ctx.state === 'suspended') {
+            ctx.resume().catch(() => {});
+          }
+        } 
+        return ctx; 
+      }
+      async function unlock(){ 
+        if(unlocked) return; 
+        const c=ensureCtx(); 
+        try{ 
+          if(c.state==='suspended') await c.resume(); 
+          // 播放一個無聲音調來確保音頻上下文已激活
+          const o = c.createOscillator();
+          const g = c.createGain();
+          g.gain.setValueAtTime(0, c.currentTime);
+          o.connect(g);
+          g.connect(c.destination);
+          o.start(c.currentTime);
+          o.stop(c.currentTime + 0.01);
+        }catch{} 
+        unlocked=true; 
+      }
       function tone(freq,dur=0.12,vol=0.10,type='triangle',when=0){
         if(muted) return; const c=ensureCtx(); const t0=c.currentTime+when;
         const o=c.createOscillator(), g=c.createGain(); o.type=type;
