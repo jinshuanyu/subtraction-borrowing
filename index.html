@@ -3,15 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>借位減法遊戲</title>
+  <title>退位減法練習</title>
   <style>
     html,body{margin:0;padding:0}
-    body{
-      font-family:"Inter",system-ui,-apple-system,"Noto Sans TC",sans-serif;
-      background:#fff;color:#1f2937;overflow:auto;
-    }
+    body{font-family:"Inter",system-ui,-apple-system,"Noto Sans TC",sans-serif;background:#fff;color:#1f2937;overflow:auto;}
 
-    /* Front / HowTo Pages */
+    /* Front/HowTo pages */
     .page{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;z-index:2000;}
     .card{width:min(760px,92vw);background:#fff;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.15);padding:22px;}
     .title{font-size:30px;color:#7c3aed;margin:0 0 10px;text-align:center;}
@@ -20,22 +17,34 @@
     .btn-solid{background:#10b981;color:#fff;border:none;border-radius:12px;padding:12px 18px;font-weight:800;cursor:pointer}
     .btn-ghost{background:#eef2ff;color:#4f46e5;border:none;border-radius:12px;padding:12px 18px;font-weight:800;cursor:pointer}
 
-    /* Game container width cap (mobile-safe) */
+    /* Counter & celebration (visual only) */
+    #roundsBadge{position:fixed;right:10px;top:10px;z-index:1600;background:#6a0dad;color:#fff;font-weight:700;padding:6px 10px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.18);font-size:14px;}
+    #confettiCanvas{position:fixed;inset:0;z-index:2200;pointer-events:none;display:none;}
+    #applauseOverlay{position:fixed;inset:0;display:none;z-index:2300;align-items:center;justify-content:center;pointer-events:none;}
+    #applauseInner{background:rgba(255,255,255,.92);border-radius:16px;padding:18px 22px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.18);animation:popIn .35s ease-out;}
+    #applauseInner h3{margin:0 0 .4rem;font-size:24px;color:#10b981;font-weight:900;}
+    #applauseInner .hands{font-size:42px;line-height:1.1;animation:clap .8s ease-in-out infinite;transform-origin:center;}
+    @keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+    @keyframes clap{0%,100%{transform:scale(1) rotate(0deg)}50%{transform:scale(1.08) rotate(2deg)}}
+
+    /* Game area */
     .game-container{
       width:100%;
       /* 不超過視窗高 90%、不超過 980px、也不超過螢幕寬 */
-      max-width: min(90vh, 980px, 100vw);
+      max-width:min(90vh, 980px, 100vw);
       margin:0 auto; padding:12px; background:transparent; position:relative;
     }
     canvas{
       display:block;width:100%;height:auto;
       background:#f1f6fa;border-radius:10px;touch-action:none;
     }
-    .controls{display:flex;gap:10px;flex-wrap:nowrap;justify-content:center;margin-top:12px}
+    .controls{
+      display:flex;gap:10px;flex-wrap:nowrap;justify-content:center;margin-top:12px
+    }
     .btn{padding:8px 14px;font-size:.95rem;font-weight:600;border-radius:10px;border:none;color:#fff;background:#6a0dad}
     .btn:disabled{opacity:.5;cursor:not-allowed}
 
-    /* Floating inputs rendered over targets */
+    /* Floating inputs in target boxes */
     .floating-input{
       position:absolute;z-index:50;outline:none;border:none;border-radius:10px;
       background:rgba(255,255,255,.96);text-align:center;font-weight:800;color:#111827;
@@ -43,7 +52,7 @@
     .floating-input.correct{background:#ecfdf5;color:#065f46;}
     .floating-input.wrong{background:#fef2f2;color:#991b1b;}
 
-    /* Message box (locks UI until confirm) */
+    /* Locking message box */
     .message-box{
       position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
       background:#fff;padding:14px 16px;border-radius:12px;
@@ -53,29 +62,19 @@
     .message-box h3{font-size:1rem;margin:0 0 .35rem;color:#6a0dad}
     .message-box p{margin:.2rem 0 .7rem}
     .message-box button{background:#10b981;color:#fff;border:none;border-radius:8px;padding:8px 14px}
-
-    /* Counter & celebration */
-    #roundsBadge{position:fixed;right:10px;top:10px;z-index:1600;background:#6a0dad;color:#fff;font-weight:700;padding:6px 10px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.18);font-size:14px;}
-    #confettiCanvas{position:fixed;inset:0;z-index:2200;pointer-events:none;display:none;}
-    #applauseOverlay{position:fixed;inset:0;display:none;z-index:2300;align-items:center;justify-content:center;pointer-events:none;}
-    #applauseInner{background:rgba(255,255,255,.92);border-radius:16px;padding:18px 22px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.18);animation:popIn .35s ease-out;}
-    #applauseInner h3{margin:0 0 .4rem;font-size:24px;color:#10b981;font-weight:900;}
-    #applauseInner .hands{font-size:42px;line-height:1.1;animation:clap .8s ease-in-out infinite;transform-origin:center;}
-    @keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
-    @keyframes clap{0%,100%{transform:scale(1) rotate(0deg)}50%{transform:scale(1.08) rotate(2deg)}}
   </style>
 </head>
 <body>
   <!-- Front Page -->
   <div id="frontPage" class="page" style="display:flex;background:linear-gradient(180deg,#fef3c7 0%, #e0f2fe 100%);">
     <div class="card">
-      <h1 class="title">借位減法練習</h1>
-      <p class="subtitle">個位數不夠減怎麼辦？跟著步驟，拖拉圓形數字完成算式！</p>
+      <h1 class="title">退位減法練習</h1>
+      <p class="subtitle">個位數不夠減怎麼辦？<br>跟著步驟，練習完成算式！</p>
       <div class="actions">
         <button id="goPlay" class="btn-solid">開始遊戲</button>
         <button id="goHowTo" class="btn-ghost">遊戲說明</button>
-        <footer style="display:block;width:100%;margin-top:20px;font-size:0.8em;color:#666;text-align:center;">
-          © 2025 Your Name. All rights reserved.
+        <footer style="display:block; width:100%; margin-top:20px; font-size:0.8em; color:#666; text-align:center;">
+          © 2025 Christina Yu. All rights reserved.
         </footer>
       </div>
     </div>
@@ -85,11 +84,11 @@
   <div id="howToPage" class="page" style="background:#fdfdfd;">
     <div class="card">
       <h2 class="title" style="font-size:24px">遊戲說明</h2>
-      <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px;line-height:1.7;">
+      <div class="howto-list" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px;line-height:1.7;">
         <ol>
           <li>個位數不夠減時，向十位數借 1 個 10。</li>
           <li>把被減數拆成<strong>「個位數」</strong>和「10」。</li>
-          <li><strong>拖拉圓形數字</strong>：用 10 減去題目的「減數」，把差<strong>寫在「剩下」</strong>。</li>
+          <li><strong>拖拉圓形數字</strong>，用 10 減去題目的「減數」，把差<strong>寫在「剩下」</strong>。</li>
           <li>把被減數的「個位數」和「剩下」相加，得到的和<strong>就是「答案」</strong>。</li>
         </ol>
       </div>
@@ -121,7 +120,7 @@
     <button id="messageCloseButton">確定</button>
   </div>
 
-  <!-- SFX -->
+  <!-- SFX (包含：correct / wrong / cheer / celebration) -->
   <script>
     const SFX = (() => {
       let ctx, unlocked=false, muted=false;
@@ -173,7 +172,8 @@
       frontPage.style.display='none';
       howToPage.style.display='none';
       gameContainer.style.display='block';
-      setTimeout(()=>resizeCanvas(true), 0);   /* 首次載入 reinit */
+      addPointerEvents();
+      resizeCanvas();   /* 首次載入配置 */
     }
     showFront();
     goPlay.onclick=()=>{SFX.unlock();showGame();};
@@ -318,7 +318,7 @@
       if(USE_INPUT_MODE && aU.filled && aR.filled){ ensureInputForTarget('final_answer',problem.difference); }
     }
 
-    /* ---------- Inputs ---------- */
+    /* ---------- Inputs (手機即時提交修正) ---------- */
     function ensureInputForTarget(targetId, expectedValue){
       const t=dropTargets.find(x=>x.id===targetId);
       if(!t || t.filled || inputMap.has(targetId)) return;
@@ -331,7 +331,14 @@
       gameContainer.appendChild(inp); inputMap.set(targetId,inp);
 
       let typed=false;
-      const commit=()=>{
+
+      // ✅ 新增：輸入正確值時，立刻自動提交（解決手機無 Enter/blur 的卡住）
+      function tryAutoCommit(){
+        const v=parseInt(inp.value,10);
+        if(!isNaN(v) && v===expectedValue){ commit(); }
+      }
+
+      function commit(){
         const val=parseInt(inp.value,10);
         if(isNaN(val)){ markWrong(inp); return; }
         if(val===expectedValue){
@@ -340,16 +347,15 @@
           else if(targetId==='remainder_result'){ spawnTileFromTarget(t,COLOR_REMAINDER,'tile_rem_from_row3'); }
           advanceStepsIfReady(); draw();
         }else{ markWrong(inp); }
-      };
-      inp.addEventListener('input',()=>{typed=true;});
+      }
+
+      inp.addEventListener('input',()=>{typed=true; tryAutoCommit();});
       inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); commit(); }});
       inp.addEventListener('blur',()=>{ if(typed && inp.value.trim()!==''){ commit(); }});
 
-      positionInputOverTarget(targetId);
-      requestAnimationFrame(()=>positionInputOverTarget(targetId));
+      positionInputOverTarget(targetId); requestAnimationFrame(()=>positionInputOverTarget(targetId));
       if(!uiLocked){ setTimeout(()=>inp.focus(),50); }
     }
-
     function positionInputOverTarget(targetId){
       const inp=inputMap.get(targetId); if(!inp) return; const t=dropTargets.find(x=>x.id===targetId); if(!t) return;
       const rect=canvas.getBoundingClientRect(); const dpr=window.devicePixelRatio||1;
@@ -438,7 +444,7 @@
 
     function initGame(){
       clearAllInputs(); generateProblem(); currentStep=0;
-      const rect=canvasRect(), w=rect.width, h=rect.height;
+      const rect=canvas.getBoundingClientRect(), w=rect.width, h=rect.height;
       applyScale(w);
       Y_POS_PROBLEM=h*0.12; Y_POS_ROW2=h*0.38; Y_POS_ROW3=h*0.63; Y_POS_ROW4=h*0.86; Y_POS_TRAY=Math.min(h - 10 - 14*h/800, h*0.95);
       layoutTop();
@@ -474,56 +480,9 @@
       draw();
     }
 
-    /* ==== 只重排不重置（避免手機一 resize 就洗掉進度） ==== */
-    let lastCanvasW=0, lastCanvasH=0;
-    function relayoutWithoutReset(){
-      const rect=canvasRect(); const w=rect.width, h=rect.height;
-      applyScale(w);
-      Y_POS_PROBLEM=h*0.12; Y_POS_ROW2=h*0.38; Y_POS_ROW3=h*0.63; Y_POS_ROW4=h*0.86; Y_POS_TRAY=Math.min(h - 10 - 14*h/800, h*0.95);
-      layoutTop();
-
-      const cx=w/2;
-      const OFFSET_ROW2_LEFT  = -TARGET_WIDTH*0.6;
-      const OFFSET_ROW3_RIGHT =  TARGET_WIDTH*0.6;
-      const row2_units_centerX = cx - TARGET_WIDTH*1.05 + OFFSET_ROW2_LEFT;
-      const row2_10_centerX    = cx + TARGET_WIDTH*0.15 + OFFSET_ROW2_LEFT;
-
-      const newTargets = [
-        {id:'row2_units',x:row2_units_centerX-TARGET_WIDTH/2,y:Y_POS_ROW2-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.decomposedUnits,color:COLOR_MAIN},
-        {id:'row2_ten',  x:row2_10_centerX  -TARGET_WIDTH/2,y:Y_POS_ROW2-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:10,color:COLOR_MAIN},
-
-        {id:'subtract_10',        x:cx - TARGET_WIDTH*1.5 - TARGET_WIDTH/2 + OFFSET_ROW3_RIGHT,y:Y_POS_ROW3-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:10,color:COLOR_MAIN},
-        {id:'subtract_subtrahend',x:cx - TARGET_WIDTH*0.2 - TARGET_WIDTH/2 + OFFSET_ROW3_RIGHT,y:Y_POS_ROW3-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.subtrahend,color:COLOR_SUBTRAHEND},
-        {id:'remainder_result',   x:cx + TARGET_WIDTH*1.2 - TARGET_WIDTH/2 + OFFSET_ROW3_RIGHT,y:Y_POS_ROW3-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.remainder,color:COLOR_REMAINDER},
-
-        {id:'add_units',    x:cx - TARGET_WIDTH*1.5 - TARGET_WIDTH/2,y:Y_POS_ROW4-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.decomposedUnits,color:COLOR_MAIN},
-        {id:'add_remainder',x:cx - TARGET_WIDTH*0.2 - TARGET_WIDTH/2,y:Y_POS_ROW4-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.remainder,color:COLOR_REMAINDER},
-        {id:'final_answer', x:cx + TARGET_WIDTH*1.2 - TARGET_WIDTH/2,y:Y_POS_ROW4-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.difference,color:COLOR_ANSWER},
-
-        {id:'answer', x:topPositions.answerCenter - BLOCK_RADIUS*TOP_SCALE, y:Y_POS_PROBLEM - BLOCK_RADIUS*TOP_SCALE, width:BLOCK_RADIUS*TOP_SCALE*2, height:BLOCK_RADIUS*TOP_SCALE*2, expectedValue:problem.difference, color:COLOR_ANSWER}
-      ];
-
-      // 帶回舊狀態
-      newTargets.forEach(nt=>{
-        const old=dropTargets.find(t=>t.id===nt.id);
-        nt.filled=old?.filled||false;
-        nt.currentValue=old?.currentValue??null;
-      });
-      dropTargets=newTargets;
-
-      // 依縮放比微調已存在圓的位置
-      if(lastCanvasW && lastCanvasH){
-        const sx=w/lastCanvasW, sy=h/lastCanvasH;
-        draggableBlocks.forEach(b=>{ b.x*=sx; b.y*=sy; b.originalX*=sx; b.originalY*=sy; });
-      }
-      lastCanvasW=w; lastCanvasH=h;
-
-      positionAllInputs();
-      draw();
-    }
-
     function startFlow(){
       if(currentStep!==0) return; currentStep=1; startButton.disabled=true; SFX.unlock();
+      // 自動把 10 放上第二行
       const tenTile=draggableBlocks.find(b=>b.value===10), tenTarget=dropTargets.find(t=>t.id==='row2_ten');
       if(tenTile && tenTarget){ tenTarget.filled=true; tenTarget.currentValue=10; tenTile.x=tenTarget.x+tenTarget.width/2; tenTile.y=tenTarget.y+tenTarget.height/2; draggableBlocks=draggableBlocks.filter(b=>b!==tenTile); }
       showMessage('開始囉！',`把 ${problem.minuend} 分成 10 和「個位數」。`); draw();
@@ -540,8 +499,8 @@
       canvas.addEventListener('touchend',()=>drop());
     }
 
-    /* ====== Resize：首次 reinit，其後只重排 ====== */
-    function resizeCanvas(reinit=false){
+    /* Resize —— 用容器寬度，容器已被 CSS 限制為 max-width: min(90vh, 980px, 100vw) */
+    function resizeCanvas(){
       const rect = gameContainer.getBoundingClientRect();
       const displayW = Math.floor(rect.width);
       const displayH = Math.min(
@@ -554,21 +513,17 @@
       canvas.width  = Math.round(displayW * dpr);
       canvas.height = Math.round(displayH * dpr);
       ctx.setTransform(dpr,0,0,dpr,0,0);
-
-      if(reinit){
-        applyScale(displayW);
-        initGame();         // 首次載入才重置
-      }else{
-        relayoutWithoutReset(); // 之後只重排
-      }
+      applyScale(displayW);
+      initGame();
+      positionAllInputs();
     }
 
-    /* Wire buttons（使用上方已取得的節點，不要再重複宣告） */
+    /* Wire buttons */
     startButton.addEventListener('click',()=>{SFX.unlock(); startFlow();});
     nextProblemButton.addEventListener('click',nextProblem);
 
-    window.addEventListener('load',()=>{addPointerEvents(); resizeCanvas(true);});
-    window.addEventListener('resize',()=>resizeCanvas(false));
+    window.addEventListener('load',()=>{addPointerEvents(); resizeCanvas();});
+    window.addEventListener('resize',resizeCanvas);
   </script>
 </body>
 </html>
