@@ -2,7 +2,6 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <!-- 手機安全視窗，含瀏海 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>退位減法練習</title>
   <style>
@@ -79,7 +78,6 @@
   </style>
 </head>
 <body>
-  <!-- 首頁 -->
   <div id="frontPage" class="page" style="display:flex;background:linear-gradient(180deg,#fef3c7 0%, #e0f2fe 100%);">
     <div class="card">
       <h1 class="title">退位減法練習</h1>
@@ -94,7 +92,6 @@
     </div>
   </div>
 
-  <!-- 說明頁 -->
   <div id="howToPage" class="page" style="background:#fdfdfd;">
     <div class="card">
       <h2 class="title" style="font-size:24px">遊戲說明</h2>
@@ -113,12 +110,10 @@
     </div>
   </div>
 
-  <!-- 計數與慶祝 -->
   <div id="roundsBadge">已完成：0 題</div>
   <canvas id="confettiCanvas"></canvas>
   <div id="applauseOverlay"><div id="applauseInner"><h3>太棒了！</h3><div class="hands">👏👏👏</div></div></div>
 
-  <!-- 遊戲區 -->
   <div class="game-container" id="gameContainer" style="display:none">
     <canvas id="subtractionCanvas"></canvas>
     <div class="controls">
@@ -127,14 +122,12 @@
     </div>
   </div>
 
-  <!-- 訊息框 -->
   <div id="messageBox" class="message-box">
     <h3 id="messageTitle"></h3>
     <p id="messageContent"></p>
     <button id="messageCloseButton">確定</button>
   </div>
 
-  <!-- 音效（保留你原本的） -->
   <script>
     const SFX = (() => {
       let ctx, unlocked=false, muted=false;
@@ -248,6 +241,7 @@
     // 狀態
     let problem={}, currentStep=0, draggableBlocks=[], dropTargets=[], activeDraggable=null, offsetX, offsetY;
     const inputMap=new Map();
+    let isInputFocused = false; /* 新增一個變數來追蹤輸入框狀態 */
 
     // 尺寸（會依容器寬縮放）
     let SCALE=1;
@@ -383,6 +377,10 @@
       inp.addEventListener('input',()=>{typed=true; tryAutoCommit();});
       inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); commit(); }});
       inp.addEventListener('blur',()=>{ if(typed && inp.value.trim()!==''){ commit(); }});
+      
+      /* 新增事件監聽器來追蹤焦點狀態 */
+      inp.addEventListener('focus', () => { isInputFocused = true; });
+      inp.addEventListener('blur', () => { isInputFocused = false; });
 
       positionInputOverTarget(targetId); requestAnimationFrame(()=>positionInputOverTarget(targetId));
       /* 即使訊息框還開著，也先把輸入框建立起來 */
@@ -538,6 +536,8 @@
 
     /* 依容器寬高設定 canvas（完全不可能超寬） */
     function resizeCanvas(){
+      if(isInputFocused) return; /* 如果輸入框處於焦點狀態，直接返回 */
+      
       const rect = gameContainer.getBoundingClientRect();
       const displayW = Math.floor(rect.width);  // 就依容器寬
       const displayH = Math.min(
