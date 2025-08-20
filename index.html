@@ -86,10 +86,10 @@
       <h2 class="title" style="font-size:24px">遊戲說明</h2>
       <div class="howto-list" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px;line-height:1.7;">
         <ol>
-          <li>1. 個位數不夠減時，向十位數借 1 個 10。</li>
-          <li>2. 把被減數拆成<strong>「個位數」</strong>和「10」。</li>
-          <li>3. <strong>拖拉圓形數字</strong>，用 10 減去題目的「減數」，把差<strong>輸入到「剩下」</strong>。</li>
-          <li>4. 把被減數的「個位數」和「剩下」相加，得到的和<strong>輸入到「答案」</strong>。</li>
+          <li>個位數不夠減時，向十位數借 1 個 10。</li>
+          <li>把被減數拆成<strong>「個位數」</strong>和「10」。</li>
+          <li><strong>拖拉圓形數字</strong>，用 10 減去題目的「減數」，把差<strong>寫在「剩下」</strong>。</li>
+          <li>把被減數的「個位數」和「剩下」相加，得到的和<strong>就是「答案」</strong>。</li>
         </ol>
       </div>
       <div class="actions">
@@ -375,7 +375,7 @@
         const cx=b.x, cy=b.y;
         if(!t.filled && cx>t.x && cx<t.x+t.width && cy>t.y && cy<t.y+t.height){
           if(USE_INPUT_MODE && (t.id==='row2_units'||t.id==='remainder_result'||t.id==='final_answer')){
-            resetBlock(b); showMessage('提示','這一格要自己輸入數字喔！'); SFX.wrong(); return;
+            resetBlock(b); showMessage('提示','這一格要自己填入數字喔！'); SFX.wrong(); return;
           }
           const stepOK =
             (currentStep===1 && (t.id==='row2_ten'||t.id==='row2_units')) ||
@@ -402,10 +402,10 @@
       if(currentStep===1 && isFilled(['row2_ten','row2_units'])){
         currentStep=2; const tTen=dropTargets.find(t=>t.id==='row2_ten'); if(tTen){ spawnTileFromTarget(tTen,COLOR_MAIN,'tile_10_from_row2'); }
         spawnDraggableSubtrahendFromTop();
-        showMessage('很好！下一步','用「10」減去題目的「減數」，把差輸入在「剩下」。');
+        showMessage('很好！下一步','「10」減去題目的「減數」，把差寫在「剩下」。');
 
       }else if(currentStep===2 && isFilled(['subtract_10','subtract_subtrahend','remainder_result'])){
-        currentStep=3; showMessage('快完成了','把「個位數」和「剩下」相加，輸入「答案」。');
+        currentStep=3; showMessage('快完成了','把「個位數」和「剩下」相加，寫下「答案」。');
 
       }else if(currentStep===3 && isFilled(['add_units','add_remainder','final_answer'])){
         currentStep=4; showMessage('答對了！', `${problem.minuend} − ${problem.subtrahend} = ${problem.difference}`); onCompleted();
@@ -519,3 +519,4 @@
   </script>
 </body>
 </html>
+
