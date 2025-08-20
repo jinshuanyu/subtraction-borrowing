@@ -2,70 +2,84 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <!-- 手機安全視窗，含瀏海 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>退位減法練習</title>
   <style>
-    html,body{margin:0;padding:0}
-    body{font-family:"Inter",system-ui,-apple-system,"Noto Sans TC",sans-serif;background:#fff;color:#1f2937;overflow:auto;}
+    /* 全域：避免任何水平溢出 */
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; overflow-x:hidden; }
 
-    /* Front/HowTo pages */
-    .page{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;z-index:2000;}
-    .card{width:min(760px,92vw);background:#fff;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.15);padding:22px;}
-    .title{font-size:30px;color:#7c3aed;margin:0 0 10px;text-align:center;}
-    .subtitle{margin:8px 0 14px;text-align:center;color:#374151;}
-    .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:10px;}
-    .btn-solid{background:#10b981;color:#fff;border:none;border-radius:12px;padding:12px 18px;font-weight:800;cursor:pointer}
-    .btn-ghost{background:#eef2ff;color:#4f46e5;border:none;border-radius:12px;padding:12px 18px;font-weight:800;cursor:pointer}
+    body{
+      font-family:"Inter",system-ui,-apple-system,"Noto Sans TC",sans-serif;
+      background:#fff; color:#1f2937;
+    }
 
-    /* Counter & celebration */
-    #roundsBadge{position:fixed;right:10px;top:10px;z-index:1600;background:#6a0dad;color:#fff;font-weight:700;padding:6px 10px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.18);font-size:14px;}
-    #confettiCanvas{position:fixed;inset:0;z-index:2200;pointer-events:none;display:none;}
-    #applauseOverlay{position:fixed;inset:0;display:none;z-index:2300;align-items:center;justify-content:center;pointer-events:none;}
-    #applauseInner{background:rgba(255,255,255,.92);border-radius:16px;padding:18px 22px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.18);animation:popIn .35s ease-out;}
-    #applauseInner h3{margin:0 0 .4rem;font-size:24px;color:#10b981;font-weight:900;}
-    #applauseInner .hands{font-size:42px;line-height:1.1;animation:clap .8s ease-in-out infinite;transform-origin:center;}
-    @keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
-    @keyframes clap{0%,100%{transform:scale(1) rotate(0deg)}50%{transform:scale(1.08) rotate(2deg)}}
+    /* 首頁/說明頁 */
+    .page{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:24px; z-index:2000; }
+    .card{ width:min(760px,92vw); background:#fff; border-radius:16px; box-shadow:0 20px 50px rgba(0,0,0,.15); padding:22px; }
+    .title{ font-size:30px; color:#7c3aed; margin:0 0 10px; text-align:center; }
+    .subtitle{ margin:8px 0 14px; text-align:center; color:#374151; }
+    .actions{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
+    .btn-solid{ background:#10b981; color:#fff; border:none; border-radius:12px; padding:12px 18px; font-weight:800; cursor:pointer }
+    .btn-ghost{ background:#eef2ff; color:#4f46e5; border:none; border-radius:12px; padding:12px 18px; font-weight:800; cursor:pointer }
 
-    /* Game area */
+    /* 計數與慶祝（純視覺） */
+    #roundsBadge{ position:fixed; right:10px; top:10px; z-index:1600; background:#6a0dad; color:#fff; font-weight:700; padding:6px 10px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); font-size:14px; }
+    #confettiCanvas{ position:fixed; inset:0; z-index:2200; pointer-events:none; display:none; }
+    #applauseOverlay{ position:fixed; inset:0; display:none; z-index:2300; align-items:center; justify-content:center; pointer-events:none; }
+    #applauseInner{ background:rgba(255,255,255,.92); border-radius:16px; padding:18px 22px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.18); animation:popIn .35s ease-out; }
+    #applauseInner h3{ margin:0 0 .4rem; font-size:24px; color:#10b981; font-weight:900; }
+    #applauseInner .hands{ font-size:42px; line-height:1.1; animation:clap .8s ease-in-out infinite; transform-origin:center; }
+    @keyframes popIn{ from{transform:scale(.8);opacity:0} to{transform:scale(1);opacity:1} }
+    @keyframes clap{ 0%,100%{transform:scale(1) rotate(0deg)} 50%{transform:scale(1.08) rotate(2deg)} }
+
+    /* ===== 遊戲寬度硬限制（重點修正） =====
+       舊裝置用 vw/vh，支援新版瀏覽器則用 svw/svh，哪個小取哪個 */
     .game-container{
       width:100%;
-      /* 手機安全：不超過視窗高 90%、不超過 980px、也不超過螢幕寬 */
-      max-width:min(90vh, 980px, 100vw);
+      /* 舊單位 fallback */
+      max-width: min(100vw, 90vh, 980px);
+      /* 新單位優先（會覆蓋上面那行） */
+      max-width: min(100svw, 90svh, 980px);
       margin:0 auto; padding:12px; background:transparent; position:relative;
     }
+
     canvas{
-      display:block;width:100%;height:auto;
-      background:#f1f6fa;border-radius:10px;touch-action:none;
+      display:block; width:100%; height:auto;
+      background:#f1f6fa; border-radius:10px; touch-action:none;
     }
+
     .controls{
-      display:flex;gap:10px;flex-wrap:nowrap;justify-content:center;margin-top:12px
+      display:flex; gap:10px; justify-content:center; margin-top:12px;
+      flex-wrap:wrap;   /* 手機窄時自動換行，避免超寬 */
     }
-    .btn{padding:8px 14px;font-size:.95rem;font-weight:600;border-radius:10px;border:none;color:#fff;background:#6a0dad}
-    .btn:disabled{opacity:.5;cursor:not-allowed}
 
-    /* Floating inputs：直接蓋在目標框內 */
+    .btn{ padding:8px 14px; font-size:.95rem; font-weight:600; border-radius:10px; border:none; color:#fff; background:#6a0dad }
+    .btn:disabled{ opacity:.5; cursor:not-allowed }
+
+    /* 直接疊在目標框內的輸入框（避免對齊問題） */
     .floating-input{
-      position:absolute;z-index:50;outline:none;border:none;border-radius:10px;
-      background:rgba(255,255,255,.96);text-align:center;font-weight:800;color:#111827;
+      position:absolute; z-index:50; outline:none; border:none; border-radius:10px;
+      background:rgba(255,255,255,.96); text-align:center; font-weight:800; color:#111827;
     }
-    .floating-input.correct{background:#ecfdf5;color:#065f46;}
-    .floating-input.wrong{background:#fef2f2;color:#991b1b;}
+    .floating-input.correct{ background:#ecfdf5; color:#065f46; }
+    .floating-input.wrong{ background:#fef2f2; color:#991b1b; }
 
-    /* Locking message box */
+    /* 鎖定訊息框（按確定才關） */
     .message-box{
-      position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-      background:#fff;padding:14px 16px;border-radius:12px;
-      box-shadow:0 10px 30px rgba(0,0,0,.2);display:none;z-index:1800;
-      max-width:min(92vw,520px);text-align:center;
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+      background:#fff; padding:14px 16px; border-radius:12px;
+      box-shadow:0 10px 30px rgba(0,0,0,.2); display:none; z-index:1800;
+      max-width:min(92vw,520px); text-align:center;
     }
-    .message-box h3{font-size:1rem;margin:0 0 .35rem;color:#6a0dad}
-    .message-box p{margin:.2rem 0 .7rem}
-    .message-box button{background:#10b981;color:#fff;border:none;border-radius:8px;padding:8px 14px}
+    .message-box h3{ font-size:1rem; margin:0 0 .35rem; color:#6a0dad }
+    .message-box p{ margin:.2rem 0 .7rem }
+    .message-box button{ background:#10b981; color:#fff; border:none; border-radius:8px; padding:8px 14px }
   </style>
 </head>
 <body>
-  <!-- Front Page -->
+  <!-- 首頁 -->
   <div id="frontPage" class="page" style="display:flex;background:linear-gradient(180deg,#fef3c7 0%, #e0f2fe 100%);">
     <div class="card">
       <h1 class="title">退位減法練習</h1>
@@ -73,22 +87,22 @@
       <div class="actions">
         <button id="goPlay" class="btn-solid">開始遊戲</button>
         <button id="goHowTo" class="btn-ghost">遊戲說明</button>
-        <footer style="display:block; width:100%; margin-top:20px; font-size:0.8em; color:#666; text-align:center;">
+        <footer style="display:block;width:100%;margin-top:20px;font-size:0.8em;color:#666;text-align:center;">
           © 2025 Christina Yu. All rights reserved.
         </footer>
       </div>
     </div>
   </div>
 
-  <!-- How-To -->
+  <!-- 說明頁 -->
   <div id="howToPage" class="page" style="background:#fdfdfd;">
     <div class="card">
       <h2 class="title" style="font-size:24px">遊戲說明</h2>
-      <div class="howto-list" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px;line-height:1.7;">
+      <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px;line-height:1.7;">
         <ol>
           <li>個位數不夠減時，向十位數借 1 個 10。</li>
           <li>把被減數拆成<strong>「個位數」</strong>和「10」。</li>
-          <li><strong>拖拉圓形數字</strong>，用 10 減去題目的「減數」，把差<strong>寫在「剩下」</strong>。</li>
+          <li><strong>拖拉圓形數字</strong>：用 10 減去題目的「減數」，把差<strong>寫在「剩下」</strong>。</li>
           <li>把被減數的「個位數」和「剩下」相加，得到的和<strong>就是「答案」</strong>。</li>
         </ol>
       </div>
@@ -99,12 +113,12 @@
     </div>
   </div>
 
-  <!-- Counter & Celebration -->
+  <!-- 計數與慶祝 -->
   <div id="roundsBadge">已完成：0 題</div>
   <canvas id="confettiCanvas"></canvas>
   <div id="applauseOverlay"><div id="applauseInner"><h3>太棒了！</h3><div class="hands">👏👏👏</div></div></div>
 
-  <!-- Game -->
+  <!-- 遊戲區 -->
   <div class="game-container" id="gameContainer" style="display:none">
     <canvas id="subtractionCanvas"></canvas>
     <div class="controls">
@@ -113,14 +127,14 @@
     </div>
   </div>
 
-  <!-- Messages -->
+  <!-- 訊息框 -->
   <div id="messageBox" class="message-box">
     <h3 id="messageTitle"></h3>
     <p id="messageContent"></p>
     <button id="messageCloseButton">確定</button>
   </div>
 
-  <!-- SFX -->
+  <!-- 音效（保留你原本的） -->
   <script>
     const SFX = (() => {
       let ctx, unlocked=false, muted=false;
@@ -157,7 +171,7 @@
   </script>
 
   <script>
-    /* ---------- Pages ---------- */
+    /* ======= 頁面切換 ======= */
     const frontPage=document.getElementById('frontPage');
     const howToPage=document.getElementById('howToPage');
     const goPlay=document.getElementById('goPlay');
@@ -181,7 +195,7 @@
     backHome.onclick=()=>{showFront();};
     howToPlay.onclick=()=>{SFX.unlock();showGame();};
 
-    /* ---------- Counter & Celebration ---------- */
+    /* ======= 計數與慶祝 ======= */
     const roundsBadge=document.getElementById('roundsBadge');
     let solvedCount=0; function updateBadge(){roundsBadge.textContent=`已完成：${solvedCount} 題`;} updateBadge();
     const confettiCanvas=document.getElementById('confettiCanvas'); const applauseOverlay=document.getElementById('applauseOverlay'); const cctx=confettiCanvas.getContext('2d');
@@ -200,7 +214,7 @@
       setTimeout(()=>{cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);confettiCanvas.style.display='none';applauseOverlay.style.display='none';},2400);
     }
 
-    /* ---------- Game core (responsive sizes) ---------- */
+    /* ======= 遊戲核心（含手機修正） ======= */
     const USE_INPUT_MODE=true, USE_GRAYSCALE_TILES=false;
     const canvas=document.getElementById('subtractionCanvas'), ctx=canvas.getContext('2d');
     const startButton=document.getElementById('startButton'), nextProblemButton=document.getElementById('nextProblemButton');
@@ -211,6 +225,7 @@
       uiLocked=true;
       messageTitle.textContent=title; messageContent.textContent=content; messageBox.style.display='block';
     }
+    /* 關閉訊息後，保證輸入框存在 */
     function ensureInputsForCurrentStep(){
       if(currentStep===1){
         ensureInputForTarget('row2_units', problem.decomposedUnits);
@@ -230,18 +245,18 @@
       positionAllInputs(); draw();
     });
 
-    // state
+    // 狀態
     let problem={}, currentStep=0, draggableBlocks=[], dropTargets=[], activeDraggable=null, offsetX, offsetY;
     const inputMap=new Map();
 
-    // responsive sizes (base * SCALE)
+    // 尺寸（會依容器寬縮放）
     let SCALE=1;
     let BLOCK_RADIUS=26, TOP_SCALE=1.22, TARGET_WIDTH=96, TARGET_HEIGHT=68;
     let FONT_SIZE_LARGE=30, FONT_SIZE_MEDIUM=22, FONT_SIZE_SMALL=16;
 
     function applyScale(w){
-      // 基準 600，讓小手機更保守：最低縮到 0.60
-      SCALE = Math.max(0.60, Math.min(1.0, w/600));
+      /* 更保守：小手機最低縮到 0.58 */
+      SCALE = Math.max(0.58, Math.min(1.0, w/600));
       BLOCK_RADIUS = Math.round(26*SCALE);
       TOP_SCALE    = 1.22;
       TARGET_WIDTH = Math.round(96*SCALE);
@@ -251,7 +266,7 @@
       FONT_SIZE_SMALL  = Math.max(14, Math.round(16*SCALE));
     }
 
-    /* Colors (4色系) */
+    /* 配色（4色） */
     const COLOR_MAIN='#79B6EE', COLOR_SUBTRAHEND='#C690CF', COLOR_REMAINDER='#9DD48A', COLOR_ANSWER='#F7BE81';
     const COLOR_TEXT='#FFFFFF', COLOR_LINE='#6b6bb0', COLOR_UP_LINE='#d09258', COLOR_TARGET_BG='rgba(0,0,0,.12)', COLOR_TARGET_BORDER='#9ca3af', COLOR_OPERATOR='#303441', COLOR_TILE_GRAY='#d1d5db';
 
@@ -316,6 +331,7 @@
       drawLine(start.x-dx,start.y, targetTopCenter(tUnits).x, targetTopCenter(tUnits).y);
       drawLine(start.x+dx,start.y, targetTopCenter(tTen).x,   targetTopCenter(tTen).y);
       drawTargetBox(tUnits,COLOR_MAIN,'個位數'); drawTargetBox(tTen,COLOR_MAIN,'10');
+      /* 立即建立輸入框（不受 uiLocked 影響） */
       if(USE_INPUT_MODE){ ensureInputForTarget('row2_units',problem.decomposedUnits); }
     }
 
@@ -338,7 +354,7 @@
       if(USE_INPUT_MODE && aU.filled && aR.filled){ ensureInputForTarget('final_answer',problem.difference); }
     }
 
-    /* ---------- Inputs（手機：即時提交；不再被 uiLocked 擋住生成） ---------- */
+    /* ======= 輸入（手機：即時提交；不受 uiLocked 阻擋） ======= */
     function ensureInputForTarget(targetId, expectedValue){
       const t=dropTargets.find(x=>x.id===targetId);
       if(!t || t.filled || inputMap.has(targetId)) return;
@@ -369,8 +385,10 @@
       inp.addEventListener('blur',()=>{ if(typed && inp.value.trim()!==''){ commit(); }});
 
       positionInputOverTarget(targetId); requestAnimationFrame(()=>positionInputOverTarget(targetId));
-      if(!uiLocked){ setTimeout(()=>inp.focus(),50); }
+      /* 即使訊息框還開著，也先把輸入框建立起來 */
+      setTimeout(()=>{ try{ inp.focus(); }catch{} }, 60);
     }
+
     function positionInputOverTarget(targetId){
       const inp=inputMap.get(targetId); if(!inp) return; const t=dropTargets.find(x=>x.id===targetId); if(!t) return;
       const rect=canvas.getBoundingClientRect(); const dpr=window.devicePixelRatio||1;
@@ -385,7 +403,7 @@
     function markCorrect(inp){ SFX.correct(); inp.classList.remove('wrong'); inp.classList.add('correct'); inp.readOnly=true; setTimeout(()=>{inp.style.display='none';},100); }
     function markWrong(inp){ SFX.wrong(); inp.classList.add('wrong'); setTimeout(()=>inp.classList.remove('wrong'),450); }
 
-    /* ---------- Drag & Drop ---------- */
+    /* ======= 拖拉 ======= */
     let isDragging=false;
     function pick(x,y){ if(uiLocked) return; for(let i=draggableBlocks.length-1;i>=0;i--){const b=draggableBlocks[i]; const d=Math.hypot(x-b.x,y-b.y); if(d<BLOCK_RADIUS){activeDraggable=b; offsetX=x-b.x; offsetY=y-b.y; isDragging=true; b.isDragging=true; b.originalX=b.x; b.originalY=b.y; draggableBlocks.splice(i,1); draggableBlocks.push(b); break;}}}
     function move(x,y){ if(!isDragging||!activeDraggable) return; activeDraggable.x=x-offsetX; activeDraggable.y=y-offsetY; draw(); }
@@ -447,7 +465,7 @@
       }
     }
 
-    /* ---------- draw / init / resize ---------- */
+    /* ======= 繪圖 / 初始化 / 尺寸 ======= */
     function draw(){
       const dpr=window.devicePixelRatio||1; ctx.setTransform(dpr,0,0,dpr,0,0);
       ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle='#f1f6fa'; ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -461,10 +479,11 @@
       clearAllInputs(); generateProblem(); currentStep=0;
       const rect=canvas.getBoundingClientRect(), w=rect.width, h=rect.height;
       applyScale(w);
+      /* 行距更寬一些 + 短畫面也能容納 */
       Y_POS_PROBLEM=h*0.12; Y_POS_ROW2=h*0.38; Y_POS_ROW3=h*0.63; Y_POS_ROW4=h*0.86; Y_POS_TRAY=Math.min(h - 10 - 14*h/800, h*0.95);
       layoutTop();
 
-      // 只放 10 這顆；其餘用輸入框
+      /* 只放 10 這顆；其餘用輸入框 */
       const tiles=[{id:'block_10',value:10,color:COLOR_MAIN}];
       const n=tiles.length, pad=20*SCALE, start=pad+BLOCK_RADIUS, end=w-pad-BLOCK_RADIUS, step=n>1?(end-start)/(n-1):0;
       draggableBlocks=tiles.map((t,i)=>({id:t.id,value:t.value,color:t.color,x:start+step*i,y:Y_POS_TRAY,isDragging:false,originalX:start+step*i,originalY:Y_POS_TRAY,activatedColor:!USE_GRAYSCALE_TILES}));
@@ -497,16 +516,17 @@
 
     function startFlow(){
       if(currentStep!==0) return; currentStep=1; startButton.disabled=true; SFX.unlock();
-      // 自動把 10 放上第二行
+      /* 自動把 10 放上第二行 */
       const tenTile=draggableBlocks.find(b=>b.value===10), tenTarget=dropTargets.find(t=>t.id==='row2_ten');
       if(tenTile && tenTarget){ tenTarget.filled=true; tenTarget.currentValue=10; tenTile.x=tenTarget.x+tenTarget.width/2; tenTile.y=tenTarget.y+tenTarget.height/2; draggableBlocks=draggableBlocks.filter(b=>b!==tenTile); }
       showMessage('開始囉！',`把 ${problem.minuend} 分成 10 和「個位數」。`);
-      ensureInputsForCurrentStep(); /* ← 立刻建立第一步輸入框，避免手機上先鎖住時沒生成 */
+      /* 立刻建立第一步輸入框（避免手機上被訊息鎖時沒生成） */
+      ensureInputsForCurrentStep();
       draw();
     }
     function nextProblem(){ initGame(); }
 
-    /* Pointer events */
+    /* 指標事件 */
     function addPointerEvents(){
       canvas.addEventListener('mousedown',e=>{const r=canvas.getBoundingClientRect(),dpr=(window.devicePixelRatio||1),sx=canvas.width/(r.width*dpr),sy=canvas.height/(r.height*dpr); if(uiLocked) return; pick((e.clientX-r.left)*sx,(e.clientY-r.top)*sy); e.preventDefault();});
       canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect(),dpr=(window.devicePixelRatio||1),sx=canvas.width/(r.width*dpr),sy=canvas.height/(r.height*dpr); move((e.clientX-r.left)*sx,(e.clientY-r.top)*sy);});
@@ -516,13 +536,13 @@
       canvas.addEventListener('touchend',()=>drop());
     }
 
-    /* Resize —— 用容器寬度，容器已被 CSS 限制為 max-width: min(90vh, 980px, 100vw) */
+    /* 依容器寬高設定 canvas（完全不可能超寬） */
     function resizeCanvas(){
       const rect = gameContainer.getBoundingClientRect();
-      const displayW = Math.floor(rect.width);
+      const displayW = Math.floor(rect.width);  // 就依容器寬
       const displayH = Math.min(
         Math.round(displayW * 1.08),
-        Math.round(window.innerHeight * 0.90)
+        Math.round((window.innerHeight || document.documentElement.clientHeight) * 0.90)
       );
       const dpr = window.devicePixelRatio || 1;
       canvas.style.width  = displayW + 'px';
@@ -535,13 +555,13 @@
       positionAllInputs();
     }
 
-    /* Wire buttons */
+    /* 按鈕連結 */
     startButton.addEventListener('click',()=>{SFX.unlock(); startFlow();});
     nextProblemButton.addEventListener('click',nextProblem);
 
     window.addEventListener('load',()=>{addPointerEvents(); resizeCanvas();});
     window.addEventListener('resize',resizeCanvas);
-    window.addEventListener('orientationchange',()=>setTimeout(resizeCanvas, 50));
+    window.addEventListener('orientationchange',()=>setTimeout(resizeCanvas, 80));
   </script>
 </body>
 </html>
