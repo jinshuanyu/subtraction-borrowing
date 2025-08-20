@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>退位減法練習</title>
+  <style>
+    html,body{margin:0;padding:0}
+    body{font-family:"Inter",system-ui,-apple-system,"Noto Sans TC",sans-serif;background:#fff;color:#1f2937;overflow:auto;}
+
+    /* Front/HowTo pages */
+    .page{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;z-index:2000;}
+    .card{width:min(760px,92vw);background:#fff;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.15);padding:22px;}
+    .title{font-size:30px;color:#7c3aed;margin:0 0 10px;text-align:center;}
+    .subtitle{margin:8px 0 14px;text-align:center;color:#374151;}
+    .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:10px;}
+    .btn-solid{background:#10b981;color:#fff;border:none;border-radius:12px;padding:12px 18px;font-weight:800;cursor:pointer}
+    .btn-ghost{background:#eef2ff;color:#4f46e5;border:none;border-radius:12px;padding:12px 18px;font-weight:800;cursor:pointer}
+
+    /* Counter & celebration (visual only) */
+    #roundsBadge{position:fixed;right:10px;top:10px;z-index:1600;background:#6a0dad;color:#fff;font-weight:700;padding:6px 10px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.18);font-size:14px;}
+    #confettiCanvas{position:fixed;inset:0;z-index:2200;pointer-events:none;display:none;}
+    #applauseOverlay{position:fixed;inset:0;display:none;z-index:2300;align-items:center;justify-content:center;pointer-events:none;}
+    #applauseInner{background:rgba(255,255,255,.92);border-radius:16px;padding:18px 22px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.18);animation:popIn .35s ease-out;}
+    #applauseInner h3{margin:0 0 .4rem;font-size:24px;color:#10b981;font-weight:900;}
+    #applauseInner .hands{font-size:42px;line-height:1.1;animation:clap .8s ease-in-out infinite;transform-origin:center;}
+    @keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+    @keyframes clap{0%,100%{transform:scale(1) rotate(0deg)}50%{transform:scale(1.08) rotate(2deg)}}
+
+    /* Game area */
+    .game-container{
+      width:100%;
+      max-width:90vh;           /* ← 以視窗高度的 90% 限制寬度 */
+      margin:0 auto; padding:12px; background:transparent; position:relative;
+    }
+    canvas{
+      display:block;width:100%;height:auto;
+      background:#f1f6fa;border-radius:10px;touch-action:none;
+    }
+    .controls{
+      display:flex;gap:10px;flex-wrap:nowrap;justify-content:center;margin-top:12px
+    }
+    .btn{padding:8px 14px;font-size:.95rem;font-weight:600;border-radius:10px;border:none;color:#fff;background:#6a0dad}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+
+    /* Floating inputs in target boxes */
+    .floating-input{
+      position:absolute;z-index:50;outline:none;border:none;border-radius:10px;
+      background:rgba(255,255,255,.96);text-align:center;font-weight:800;color:#111827;
+    }
+    .floating-input.correct{background:#ecfdf5;color:#065f46;}
+    .floating-input.wrong{background:#fef2f2;color:#991b1b;}
+
+    /* Locking message box */
+    .message-box{
+      position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+      background:#fff;padding:14px 16px;border-radius:12px;
+      box-shadow:0 10px 30px rgba(0,0,0,.2);display:none;z-index:1800;
+      max-width:min(92vw,520px);text-align:center;
+    }
+    .message-box h3{font-size:1rem;margin:0 0 .35rem;color:#6a0dad}
+    .message-box p{margin:.2rem 0 .7rem}
+    .message-box button{background:#10b981;color:#fff;border:none;border-radius:8px;padding:8px 14px}
+  </style>
+</head>
+<body>
+  <!-- Front Page -->
+  <div id="frontPage" class="page" style="display:flex;background:linear-gradient(180deg,#fef3c7 0%, #e0f2fe 100%);">
+    <div class="card">
+      <h1 class="title">退位減法練習</h1>
+      <p class="subtitle">個位數不夠減怎麼辦？<br>跟著步驟，練習完成算式！</p>
+      <div class="actions">
+        <button id="goPlay" class="btn-solid">開始遊戲</button>
+        <button id="goHowTo" class="btn-ghost">遊戲說明</button>
+<footer style="display:block; width:100%; margin-top:20px; font-size:0.8em; color:#666; text-align:center;">
+  © 2025 Your Name. All rights reserved.
+</footer>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- How-To -->
+  <div id="howToPage" class="page" style="background:#fdfdfd;">
+    <div class="card">
+      <h2 class="title" style="font-size:24px">遊戲說明</h2>
+      <div class="howto-list" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px;line-height:1.7;">
+        <ol>
+          <li>1. 個位數不夠減時，向十位數借 1 個 10。</li>
+          <li>2. 把被減數拆成<strong>「個位數」</strong>和「10」。</li>
+          <li>3. <strong>拖拉圓形數字</strong>，用 10 減去題目的「減數」，把差<strong>輸入到「剩下」</strong>。</li>
+          <li>4. 把被減數的「個位數」和「剩下」相加，得到的和<strong>輸入到「答案」</strong>。</li>
+        </ol>
+      </div>
+      <div class="actions">
+        <button id="backHome" class="btn-ghost">回到首頁</button>
+        <button id="howToPlay" class="btn-solid">開始遊戲</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Counter & Celebration -->
+  <div id="roundsBadge">已完成：0 題</div>
+  <canvas id="confettiCanvas"></canvas>
+  <div id="applauseOverlay"><div id="applauseInner"><h3>太棒了！</h3><div class="hands">👏👏👏</div></div></div>
+
+  <!-- Game -->
+  <div class="game-container" id="gameContainer" style="display:block">
+    <canvas id="subtractionCanvas"></canvas>
+    <div class="controls">
+      <button id="startButton" class="btn">開始計算▶️</button>
+      <button id="nextProblemButton" class="btn" disabled>下一題⏭️</button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div id="messageBox" class="message-box">
+    <h3 id="messageTitle"></h3>
+    <p id="messageContent"></p>
+    <button id="messageCloseButton">確定</button>
+  </div>
+
+  <!-- SFX (包含：correct / wrong / cheer / celebration) -->
+  <script>
+    const SFX = (() => {
+      let ctx, unlocked=false, muted=false;
+      function ensureCtx(){ if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)(); return ctx; }
+      async function unlock(){ if(unlocked) return; const c=ensureCtx(); try{ if(c.state==='suspended') await c.resume(); }catch{} unlocked=true; }
+      function tone(freq,dur=0.12,vol=0.10,type='triangle',when=0){
+        if(muted) return; const c=ensureCtx(); const t0=c.currentTime+when;
+        const o=c.createOscillator(), g=c.createGain(); o.type=type;
+        o.frequency.setValueAtTime(freq,t0);
+        g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(vol,t0+0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+        o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0+dur+0.02);
+      }
+      function correct(){ unlock(); tone(988,.12,.12,'triangle',0.00); tone(1318,.10,.10,'triangle',0.10); }
+      function wrong(){ unlock(); tone(220,.22,.14,'sawtooth',0.00); }
+      function cheer(){ unlock(); tone(880,.16,.12,'triangle',0.00); tone(1047,.16,.11,'triangle',0.16); tone(1318,.22,.11,'triangle',0.32); }
+      function celebration(){ // ~2.4s
+        unlock();
+        const steps = [
+          { f: 784,  t: 0.00, d: 0.20 }, // G5
+          { f: 988,  t: 0.18, d: 0.20 }, // B5
+          { f: 1175, t: 0.36, d: 0.24 }, // D6
+          { f: 1568, t: 0.62, d: 0.26 }, // G6
+          { f: 1760, t: 0.90, d: 0.28 }, // A6
+          { f: 1976, t: 1.20, d: 0.30 }, // B6
+          { f: 2349, t: 1.52, d: 0.32 }, // D7
+          { f: 2637, t: 1.86, d: 0.36 }, // E7
+        ];
+        steps.forEach(s => tone(s.f, s.d, 0.10, 'triangle', s.t));
+      }
+      return { unlock, correct, wrong, cheer, celebration };
+    })();
+    window.addEventListener('pointerdown',()=>SFX.unlock(),{once:true});
+  </script>
+
+  <script>
+    /* ---------- Pages ---------- */
+    const frontPage=document.getElementById('frontPage');
+    const howToPage=document.getElementById('howToPage');
+    const goPlay=document.getElementById('goPlay');
+    const goHowTo=document.getElementById('goHowTo');
+    const backHome=document.getElementById('backHome');
+    const howToPlay=document.getElementById('howToPlay');
+    const gameContainer=document.getElementById('gameContainer');
+
+    function showFront(){frontPage.style.display='flex';howToPage.style.display='none';}
+    function showHowTo(){frontPage.style.display='none';howToPage.style.display='flex';}
+    function showGame(){
+      frontPage.style.display='none';
+      howToPage.style.display='none';
+      gameContainer.style.display='block';
+      setTimeout(resizeCanvas, 0);
+    }
+    showFront();
+    goPlay.onclick=()=>{SFX.unlock();showGame();};
+    goHowTo.onclick=()=>{SFX.unlock();showHowTo();};
+    backHome.onclick=()=>{showFront();};
+    howToPlay.onclick=()=>{SFX.unlock();showGame();};
+
+    /* ---------- Counter & Celebration ---------- */
+    const roundsBadge=document.getElementById('roundsBadge');
+    let solvedCount=0; function updateBadge(){roundsBadge.textContent=`已完成：${solvedCount} 題`;} updateBadge();
+    const confettiCanvas=document.getElementById('confettiCanvas'); const applauseOverlay=document.getElementById('applauseOverlay'); const cctx=confettiCanvas.getContext('2d');
+    function resizeConfetti(){confettiCanvas.width=window.innerWidth;confettiCanvas.height=window.innerHeight;} resizeConfetti(); window.addEventListener('resize',resizeConfetti);
+    function triggerCelebration(){
+      applauseOverlay.style.display='flex'; confettiCanvas.style.display='block';
+      cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+      const parts=[]; const colors=['#fbbf24','#34d399','#60a5fa','#f472b6','#f87171','#a78bfa'];
+      for(let i=0;i<180;i++){parts.push({x:Math.random()*confettiCanvas.width,y:-20-Math.random()*200,r:3+Math.random()*4,c:colors[Math|Math.random()*colors.length],vx:-1+Math.random()*2,vy:2+Math.random()*3,a:.8+Math.random()*.2,rot:Math.random()*Math.PI*2,vr:-.1+Math.random()*.2});}
+      function tick(){
+        cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+        parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;cctx.save();cctx.globalAlpha=p.a;cctx.translate(p.x,p.y);cctx.rotate(p.rot);cctx.fillStyle=p.c;cctx.fillRect(-p.r,-p.r,p.r*2,p.r*2);cctx.restore();});
+        if(parts.some(p=>p.y<confettiCanvas.height+20)) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+      setTimeout(()=>{cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);confettiCanvas.style.display='none';applauseOverlay.style.display='none';},2400);
+    }
+
+    /* ---------- Game core (responsive sizes) ---------- */
+    const USE_INPUT_MODE=true, USE_GRAYSCALE_TILES=false;
+    const canvas=document.getElementById('subtractionCanvas'), ctx=canvas.getContext('2d');
+    const startButton=document.getElementById('startButton'), nextProblemButton=document.getElementById('nextProblemButton');
+    const messageBox=document.getElementById('messageBox'), messageTitle=document.getElementById('messageTitle'), messageContent=document.getElementById('messageContent'), messageCloseButton=document.getElementById('messageCloseButton');
+
+    let uiLocked=false;
+    function showMessage(title,content){uiLocked=true;messageTitle.textContent=title;messageContent.textContent=content;messageBox.style.display='block';}
+    messageCloseButton.addEventListener('click',()=>{messageBox.style.display='none';uiLocked=false;positionAllInputs();draw();});
+
+    // state
+    let problem={}, currentStep=0, draggableBlocks=[], dropTargets=[], activeDraggable=null, offsetX, offsetY;
+    const inputMap=new Map();
+
+    // responsive sizes (base * SCALE)
+    let SCALE=1;
+    let BLOCK_RADIUS=26, TOP_SCALE=1.22, TARGET_WIDTH=96, TARGET_HEIGHT=68;
+    let FONT_SIZE_LARGE=30, FONT_SIZE_MEDIUM=22, FONT_SIZE_SMALL=16; /* 說明字大一些 */
+
+    function applyScale(w){
+      // 基準寬度 600，限制 0.68 ~ 1.0
+      SCALE = Math.max(0.68, Math.min(1.0, w/600));
+      BLOCK_RADIUS = Math.round(26*SCALE);
+      TOP_SCALE    = 1.22;
+      TARGET_WIDTH = Math.round(96*SCALE);
+      TARGET_HEIGHT= Math.round(68*SCALE);
+      FONT_SIZE_LARGE  = Math.round(30*SCALE);
+      FONT_SIZE_MEDIUM = Math.round(22*SCALE);
+      FONT_SIZE_SMALL  = Math.max(14, Math.round(16*SCALE));
+    }
+
+    /* Colors (4色系) */
+    const COLOR_MAIN='#79B6EE', COLOR_SUBTRAHEND='#C690CF', COLOR_REMAINDER='#9DD48A', COLOR_ANSWER='#F7BE81';
+    const COLOR_TEXT='#FFFFFF', COLOR_LINE='#6b6bb0', COLOR_UP_LINE='#d09258', COLOR_TARGET_BG='rgba(0,0,0,.12)', COLOR_TARGET_BORDER='#9ca3af', COLOR_OPERATOR='#303441', COLOR_TILE_GRAY='#d1d5db';
+
+    let Y_POS_PROBLEM, Y_POS_ROW2, Y_POS_ROW3, Y_POS_ROW4, Y_POS_TRAY;
+    let topPositions={minuendX:0,subtrahendX:0,answerCenter:0};
+
+    function canvasRect(){return canvas.getBoundingClientRect();}
+    function layoutTop(){
+      const w=canvasRect().width, cx=w/2, tileR=BLOCK_RADIUS*TOP_SCALE;
+      const gap=tileR*(3.6 + 0.6*(1/SCALE));
+      const minuendX=cx-gap*0.85, subtrahendX=cx+gap*0.05, answerCenter=subtrahendX+gap*0.72;
+      topPositions={minuendX,subtrahendX,answerCenter};
+    }
+
+    function generateProblem(){
+      let a,b; do{ a=Math.floor(Math.random()*9)+11; b=Math.floor(Math.random()*9)+1; }while(a%10>=b || a<=b);
+      problem={minuend:a, subtrahend:b, difference:a-b, decomposedUnits:a%10, remainder:10-b};
+    }
+
+    function targetCenter(t){return{x:t.x+t.width/2,y:t.y+t.height/2};}
+    function targetTopCenter(t){return{x:t.x+t.width/2,y:t.y};}
+    function targetBottomCenter(t){return{x:t.x+t.width/2,y:t.y+t.height};}
+    function circleRightEdge(cx,r){return cx+r;} function circleLeftEdge(cx,r){return cx-r;}
+    function circleBottom(cx,cy,r){return{x:cx,y:cy+r};}
+
+    function drawRoundedRect(ctx,x,y,w,h,r,fill,border=null){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();ctx.fillStyle=fill;ctx.fill(); if(border){ctx.strokeStyle=border;ctx.lineWidth=2.4*SCALE;ctx.stroke();}}
+    function drawNumberBlock(x,y,value,color,scale=1,border=null){const r=BLOCK_RADIUS*scale;ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill(); if(border){ctx.strokeStyle=border;ctx.lineWidth=3*SCALE;ctx.stroke();} ctx.fillStyle=COLOR_TEXT;ctx.font=`${Math.round(FONT_SIZE_MEDIUM*scale)}px "Inter",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(value),x,y+1*scale);}
+    function drawText(text,x,y,font,color){ctx.fillStyle=color;ctx.font=font;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,x,y);}
+    function drawTargetBox(t,color,label){drawRoundedRect(ctx,t.x,t.y,t.width,t.height,10*SCALE,COLOR_TARGET_BG,COLOR_TARGET_BORDER); if(t.filled){drawNumberBlock(t.x+t.width/2,t.y+t.height/2,t.currentValue,color,1);}else{ctx.fillStyle='#374151';ctx.font=`${FONT_SIZE_SMALL}px "Inter",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,t.x+t.width/2,t.y+t.height/2);}}
+    function drawLine(x1,y1,x2,y2,color=COLOR_LINE,w=2.4){ctx.strokeStyle=color;ctx.lineWidth=w*SCALE;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+    function drawSymbolBetween(lBox,rBox,y,g){const x=(lBox.x+lBox.width + rBox.x)/2; drawText(g,x,y,`${FONT_SIZE_LARGE}px "Inter"`,COLOR_OPERATOR);}
+    function drawSymbolBetweenCircles(lcx,lr,rcx,rr,y,g){const x=(circleRightEdge(lcx,lr)+circleLeftEdge(rcx,rr))/2; drawText(g,x,y,`${FONT_SIZE_LARGE}px "Inter"`,COLOR_OPERATOR);}
+
+    function drawProblemArea(){
+      layoutTop(); const {minuendX,subtrahendX}=topPositions;
+      drawNumberBlock(minuendX,Y_POS_PROBLEM,problem.minuend,COLOR_MAIN,TOP_SCALE);
+      drawSymbolBetweenCircles(minuendX,BLOCK_RADIUS*TOP_SCALE,subtrahendX,BLOCK_RADIUS*TOP_SCALE,Y_POS_PROBLEM,'−');
+      drawNumberBlock(subtrahendX,Y_POS_PROBLEM,problem.subtrahend,COLOR_SUBTRAHEND,TOP_SCALE);
+
+      const ansDrop=dropTargets.find(t=>t.id==='answer');
+      const eqX=(circleRightEdge(subtrahendX,BLOCK_RADIUS*TOP_SCALE)+(ansDrop.x))/2;
+      drawText('=',eqX,Y_POS_PROBLEM,`${FONT_SIZE_LARGE}px "Inter"`,COLOR_OPERATOR);
+
+      ctx.beginPath(); ctx.arc(ansDrop.x+ansDrop.width/2, ansDrop.y+ansDrop.height/2, BLOCK_RADIUS*TOP_SCALE, 0, Math.PI*2);
+      if(currentStep===4){ drawNumberBlock(ansDrop.x+ansDrop.width/2, ansDrop.y+ansDrop.height/2, problem.difference, COLOR_ANSWER, TOP_SCALE); }
+      else{ ctx.strokeStyle=COLOR_TARGET_BORDER; ctx.lineWidth=2.4*SCALE; ctx.stroke();
+            ctx.fillStyle='#6b7280'; ctx.font=`${FONT_SIZE_SMALL}px "Inter",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('?', ansDrop.x+ansDrop.width/2, ansDrop.y+ansDrop.height/2); }
+    }
+
+    function depsReadyForInput(targetId){
+      const get=id=>dropTargets.find(t=>t.id===id);
+      if(targetId==='row2_units') return true;
+      if(targetId==='remainder_result') return !!(get('subtract_10')?.filled && get('subtract_subtrahend')?.filled);
+      if(targetId==='final_answer') return !!(get('add_units')?.filled && get('add_remainder')?.filled);
+      return true;
+    }
+
+    function drawRow2(){
+      if(currentStep<1) return;
+      const tUnits=dropTargets.find(t=>t.id==='row2_units'), tTen=dropTargets.find(t=>t.id==='row2_ten');
+      const start=circleBottom(topPositions.minuendX,Y_POS_PROBLEM,BLOCK_RADIUS*TOP_SCALE), dx=BLOCK_RADIUS*TOP_SCALE*0.6;
+      drawLine(start.x-dx,start.y, targetTopCenter(tUnits).x, targetTopCenter(tUnits).y);
+      drawLine(start.x+dx,start.y, targetTopCenter(tTen).x,   targetTopCenter(tTen).y);
+      drawTargetBox(tUnits,COLOR_MAIN,'個位數'); drawTargetBox(tTen,COLOR_MAIN,'10');
+      if(USE_INPUT_MODE){ ensureInputForTarget('row2_units',problem.decomposedUnits); }
+    }
+
+    function drawRow3(){
+      if(currentStep<2) return;
+      const t10=dropTargets.find(t=>t.id==='subtract_10'), tSub=dropTargets.find(t=>t.id==='subtract_subtrahend'), tRem=dropTargets.find(t=>t.id==='remainder_result');
+      const tenSrc=dropTargets.find(t=>t.id==='row2_ten'); drawLine(targetBottomCenter(tenSrc).x,targetBottomCenter(tenSrc).y, targetTopCenter(t10).x,targetTopCenter(t10).y);
+      const subFrom=circleBottom(topPositions.subtrahendX,Y_POS_PROBLEM,BLOCK_RADIUS*TOP_SCALE); drawLine(subFrom.x,subFrom.y, targetTopCenter(tSub).x,targetTopCenter(tSub).y);
+      drawTargetBox(t10,COLOR_MAIN,'10'); drawSymbolBetween(t10,tSub,Y_POS_ROW3,'−'); drawTargetBox(tSub,COLOR_SUBTRAHEND,'減數'); drawSymbolBetween(tSub,tRem,Y_POS_ROW3,'='); drawTargetBox(tRem,COLOR_REMAINDER,'剩下');
+      if(USE_INPUT_MODE && t10.filled && tSub.filled){ ensureInputForTarget('remainder_result',problem.remainder); }
+    }
+
+    function drawRow4(){
+      if(currentStep<3) return;
+      const uSrc=dropTargets.find(t=>t.id==='row2_units'), rSrc=dropTargets.find(t=>t.id==='remainder_result');
+      const aU=dropTargets.find(t=>t.id==='add_units'), aR=dropTargets.find(t=>t.id==='add_remainder'), aF=dropTargets.find(t=>t.id==='final_answer');
+      drawLine(targetBottomCenter(uSrc).x,targetBottomCenter(uSrc).y, targetTopCenter(aU).x,targetTopCenter(aU).y);
+      drawLine(targetBottomCenter(rSrc).x,targetBottomCenter(rSrc).y, targetTopCenter(aR).x,targetTopCenter(aR).y);
+      drawTargetBox(aU,COLOR_MAIN,'個位數'); drawSymbolBetween(aU,aR,Y_POS_ROW4,'+'); drawTargetBox(aR,COLOR_REMAINDER,'剩下'); drawSymbolBetween(aR,aF,Y_POS_ROW4,'='); drawTargetBox(aF,COLOR_ANSWER,'答案');
+      if(USE_INPUT_MODE && aU.filled && aR.filled){ ensureInputForTarget('final_answer',problem.difference); }
+    }
+
+    /* ---------- Inputs ---------- */
+    function ensureInputForTarget(targetId, expectedValue){
+      const t=dropTargets.find(x=>x.id===targetId);
+      if(!t || t.filled || inputMap.has(targetId)) return;
+      if(uiLocked) return;
+      if(!depsReadyForInput(targetId)) return;
+
+      const inp=document.createElement('input');
+      inp.className='floating-input'; inp.type='tel'; inp.inputMode='numeric'; inp.placeholder='?';
+      inp.autocomplete='off'; inp.autocapitalize='off'; inp.spellcheck=false;
+      gameContainer.appendChild(inp); inputMap.set(targetId,inp);
+
+      let typed=false;
+      inp.addEventListener('input',()=>{typed=true;});
+      const commit=()=>{
+        const val=parseInt(inp.value,10);
+        if(isNaN(val)){ markWrong(inp); return; }
+        if(val===expectedValue){
+          markCorrect(inp); t.filled=true; t.currentValue=val;
+          if(targetId==='row2_units'){ spawnTileFromTarget(t,COLOR_MAIN,'tile_units_from_row2'); }
+          else if(targetId==='remainder_result'){ spawnTileFromTarget(t,COLOR_REMAINDER,'tile_rem_from_row3'); }
+          advanceStepsIfReady(); draw();
+        }else{ markWrong(inp); }
+      };
+      inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); commit(); }});
+      inp.addEventListener('blur',()=>{ if(typed && inp.value.trim()!==''){ commit(); }});
+
+      positionInputOverTarget(targetId); requestAnimationFrame(()=>positionInputOverTarget(targetId));
+      if(!uiLocked){ setTimeout(()=>inp.focus(),50); }
+    }
+    function positionInputOverTarget(targetId){
+      const inp=inputMap.get(targetId); if(!inp) return; const t=dropTargets.find(x=>x.id===targetId); if(!t) return;
+      const rect=canvas.getBoundingClientRect(); const dpr=window.devicePixelRatio||1;
+      const logicalW=canvas.width/dpr, logicalH=canvas.height/dpr;
+      const sx=rect.width/logicalW, sy=rect.height/logicalH; const cr=gameContainer.getBoundingClientRect();
+      const left=rect.left+t.x*sx, top=rect.top+t.y*sy, width=t.width*sx, height=t.height*sy;
+      inp.style.left=(left-cr.left)+'px'; inp.style.top=(top-cr.top)+'px'; inp.style.width=width+'px'; inp.style.height=height+'px';
+      const fontPx=Math.max(16,Math.round(height*0.48)); inp.style.fontSize=fontPx+'px'; inp.style.lineHeight=height+'px';
+    }
+    function positionAllInputs(){ for(const key of inputMap.keys()){ const t=dropTargets.find(x=>x.id===key); if(!t||t.filled) continue; positionInputOverTarget(key);} }
+    function clearAllInputs(){ for(const el of inputMap.values()){ try{el.remove();}catch{} } inputMap.clear(); }
+    function markCorrect(inp){ SFX.correct(); inp.classList.remove('wrong'); inp.classList.add('correct'); inp.readOnly=true; setTimeout(()=>{inp.style.display='none';},100); }
+    function markWrong(inp){ SFX.wrong(); inp.classList.add('wrong'); setTimeout(()=>inp.classList.remove('wrong'),450); }
+
+    /* ---------- Drag & Drop ---------- */
+    let isDragging=false;
+    function pick(x,y){ if(uiLocked) return; for(let i=draggableBlocks.length-1;i>=0;i--){const b=draggableBlocks[i]; const d=Math.hypot(x-b.x,y-b.y); if(d<BLOCK_RADIUS){activeDraggable=b; offsetX=x-b.x; offsetY=y-b.y; isDragging=true; b.isDragging=true; b.originalX=b.x; b.originalY=b.y; draggableBlocks.splice(i,1); draggableBlocks.push(b); break;}}}
+    function move(x,y){ if(!isDragging||!activeDraggable) return; activeDraggable.x=x-offsetX; activeDraggable.y=y-offsetY; draw(); }
+    function drop(){ if(!isDragging||!activeDraggable) return; isDragging=false; activeDraggable.isDragging=false; checkDrop(activeDraggable); activeDraggable=null; draw(); }
+    function resetBlock(b){ b.x=b.originalX; b.y=b.originalY; }
+
+    function checkDrop(b){
+      if(uiLocked){ resetBlock(b); return; }
+      let ok=false;
+      for(const t of dropTargets){
+        const cx=b.x, cy=b.y;
+        if(!t.filled && cx>t.x && cx<t.x+t.width && cy>t.y && cy<t.y+t.height){
+          if(USE_INPUT_MODE && (t.id==='row2_units'||t.id==='remainder_result'||t.id==='final_answer')){
+            resetBlock(b); showMessage('提示','這一格要自己輸入數字喔！'); SFX.wrong(); return;
+          }
+          const stepOK =
+            (currentStep===1 && (t.id==='row2_ten'||t.id==='row2_units')) ||
+            (currentStep===2 && (t.id==='subtract_10'||t.id==='subtract_subtrahend'||t.id==='remainder_result')) ||
+            (currentStep===3 && (t.id==='add_units'||t.id==='add_remainder'||t.id==='final_answer')) ||
+            (currentStep>=4 && t.id==='answer');
+          if(!stepOK){ showMessage('提示','請照步驟放置喔！'); SFX.wrong(); resetBlock(b); return; }
+
+          if(b.value===t.expectedValue){
+            t.filled=true; t.currentValue=b.value; b.x=t.x+t.width/2; b.y=t.y+t.height/2; ok=true;
+            if(USE_GRAYSCALE_TILES){ b.activatedColor=true; } SFX.correct();
+          }else{ showMessage('再想想','這個數字不適合放這裡。'); SFX.wrong(); resetBlock(b); return; }
+        }
+      }
+      if(!ok) resetBlock(b);
+      advanceStepsIfReady(); draw();
+    }
+
+    function isFilled(ids){ return dropTargets.every(t=>!ids.includes(t.id)||t.filled); }
+    function spawnTileFromTarget(target,color,id){ const c=targetCenter(target); if(draggableBlocks.some(b=>b.id===id)) return; draggableBlocks.push({id,value:target.currentValue,color,x:c.x,y:c.y,isDragging:false,originalX:c.x,originalY:c.y,activatedColor:!USE_GRAYSCALE_TILES}); }
+    function spawnDraggableSubtrahendFromTop(){ const subX=topPositions.subtrahendX, subY=Y_POS_PROBLEM+BLOCK_RADIUS*TOP_SCALE*0.1, id='block_sub_from_top'; if(!draggableBlocks.some(b=>b.id===id)){ draggableBlocks.push({id,value:problem.subtrahend,color:COLOR_SUBTRAHEND,x:subX,y:subY,isDragging:false,originalX:subX,originalY:subY,activatedColor:!USE_GRAYSCALE_TILES}); } }
+
+    function advanceStepsIfReady(){
+      if(currentStep===1 && isFilled(['row2_ten','row2_units'])){
+        currentStep=2; const tTen=dropTargets.find(t=>t.id==='row2_ten'); if(tTen){ spawnTileFromTarget(tTen,COLOR_MAIN,'tile_10_from_row2'); }
+        spawnDraggableSubtrahendFromTop();
+        showMessage('很好！下一步','用「10」減去題目的「減數」，把差輸入在「剩下」。');
+
+      }else if(currentStep===2 && isFilled(['subtract_10','subtract_subtrahend','remainder_result'])){
+        currentStep=3; showMessage('快完成了','把「個位數」和「剩下」相加，輸入「答案」。');
+
+      }else if(currentStep===3 && isFilled(['add_units','add_remainder','final_answer'])){
+        currentStep=4; showMessage('答對了！', `${problem.minuend} − ${problem.subtrahend} = ${problem.difference}`); onCompleted();
+      }
+    }
+
+    function onCompleted(){
+      nextProblemButton.disabled=false;
+      solvedCount++; updateBadge();
+      if (solvedCount % 3 === 0){
+        triggerCelebration();
+        SFX.celebration();
+      } else {
+        SFX.cheer();
+      }
+    }
+
+    /* ---------- draw / init / resize ---------- */
+    function draw(){
+      const dpr=window.devicePixelRatio||1; ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle='#f1f6fa'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      drawProblemArea(); drawRow2(); drawRow3(); drawRow4();
+      draggableBlocks.forEach(b=>{ const color=(USE_GRAYSCALE_TILES && !b.activatedColor)?COLOR_TILE_GRAY:(b.color||COLOR_TILE_GRAY); drawNumberBlock(b.x,b.y,b.value,color,1,b.isDragging?'#ffd166':null); });
+      if(currentStep===4){ const aF=dropTargets.find(t=>t.id==='final_answer'); const ans=dropTargets.find(t=>t.id==='answer'); const from=targetTopCenter(aF); const to={x:ans.x+ans.width/2,y:ans.y+ans.height}; drawLine(from.x,from.y,to.x,to.y,COLOR_UP_LINE,2.6); }
+      positionAllInputs();
+    }
+
+    function initGame(){
+      clearAllInputs(); generateProblem(); currentStep=0;
+      const rect=canvasRect(), w=rect.width, h=rect.height;
+      applyScale(w);
+      Y_POS_PROBLEM=h*0.12; Y_POS_ROW2=h*0.38; Y_POS_ROW3=h*0.63; Y_POS_ROW4=h*0.86; Y_POS_TRAY=Math.min(h - 10 - 14*h/800, h*0.95);
+      layoutTop();
+
+      // 只放 10 這顆；其餘用輸入框
+      const tiles=[{id:'block_10',value:10,color:COLOR_MAIN}];
+      const n=tiles.length, pad=20*SCALE, start=pad+BLOCK_RADIUS, end=w-pad-BLOCK_RADIUS, step=n>1?(end-start)/(n-1):0;
+      draggableBlocks=tiles.map((t,i)=>({id:t.id,value:t.value,color:t.color,x:start+step*i,y:Y_POS_TRAY,isDragging:false,originalX:start+step*i,originalY:Y_POS_TRAY,activatedColor:!USE_GRAYSCALE_TILES}));
+
+      const cx=w/2;
+      const OFFSET_ROW2_LEFT  = -TARGET_WIDTH*0.6;   /* 第二行整體偏左 */
+      const OFFSET_ROW3_RIGHT =  TARGET_WIDTH*0.6;   /* 第三行整體偏右 */
+
+      const row2_units_centerX = cx - TARGET_WIDTH*1.05 + OFFSET_ROW2_LEFT;
+      const row2_10_centerX    = cx + TARGET_WIDTH*0.15 + OFFSET_ROW2_LEFT;
+
+      dropTargets=[
+        {id:'row2_units',x:row2_units_centerX-TARGET_WIDTH/2,y:Y_POS_ROW2-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.decomposedUnits,currentValue:null,filled:false,color:COLOR_MAIN},
+        {id:'row2_ten',  x:row2_10_centerX  -TARGET_WIDTH/2,y:Y_POS_ROW2-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:10,currentValue:null,filled:false,color:COLOR_MAIN},
+
+        {id:'subtract_10',        x:cx - TARGET_WIDTH*1.5 - TARGET_WIDTH/2 + OFFSET_ROW3_RIGHT,y:Y_POS_ROW3-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:10,currentValue:null,filled:false,color:COLOR_MAIN},
+        {id:'subtract_subtrahend',x:cx - TARGET_WIDTH*0.2 - TARGET_WIDTH/2 + OFFSET_ROW3_RIGHT,y:Y_POS_ROW3-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.subtrahend,currentValue:null,filled:false,color:COLOR_SUBTRAHEND},
+        {id:'remainder_result',   x:cx + TARGET_WIDTH*1.2 - TARGET_WIDTH/2 + OFFSET_ROW3_RIGHT,y:Y_POS_ROW3-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.remainder,currentValue:null,filled:false,color:COLOR_REMAINDER},
+
+        {id:'add_units',    x:cx - TARGET_WIDTH*1.5 - TARGET_WIDTH/2,y:Y_POS_ROW4-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.decomposedUnits,currentValue:null,filled:false,color:COLOR_MAIN},
+        {id:'add_remainder',x:cx - TARGET_WIDTH*0.2 - TARGET_WIDTH/2,y:Y_POS_ROW4-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.remainder,currentValue:null,filled:false,color:COLOR_REMAINDER},
+        {id:'final_answer', x:cx + TARGET_WIDTH*1.2 - TARGET_WIDTH/2,y:Y_POS_ROW4-TARGET_HEIGHT/2,width:TARGET_WIDTH,height:TARGET_HEIGHT,expectedValue:problem.difference,currentValue:null,filled:false,color:COLOR_ANSWER},
+
+        {id:'answer', x:topPositions.answerCenter - BLOCK_RADIUS*TOP_SCALE, y:Y_POS_PROBLEM - BLOCK_RADIUS*TOP_SCALE, width:BLOCK_RADIUS*TOP_SCALE*2, height:BLOCK_RADIUS*TOP_SCALE*2, expectedValue:problem.difference, currentValue:null, filled:false, color:COLOR_ANSWER}
+      ];
+
+      startButton.disabled=false; nextProblemButton.disabled=true;
+      draw();
+    }
+
+    function startFlow(){
+      if(currentStep!==0) return; currentStep=1; startButton.disabled=true; SFX.unlock();
+      // 自動把 10 放上第二行
+      const tenTile=draggableBlocks.find(b=>b.value===10), tenTarget=dropTargets.find(t=>t.id==='row2_ten');
+      if(tenTile && tenTarget){ tenTarget.filled=true; tenTarget.currentValue=10; tenTile.x=tenTarget.x+tenTarget.width/2; tenTile.y=tenTarget.y+tenTarget.height/2; draggableBlocks=draggableBlocks.filter(b=>b!==tenTile); }
+      showMessage('開始囉！',`把 ${problem.minuend} 分成 10 和「個位數」。`); draw();
+    }
+    function nextProblem(){ initGame(); }
+
+    /* Pointer events */
+    function addPointerEvents(){
+      canvas.addEventListener('mousedown',e=>{const r=canvas.getBoundingClientRect(),dpr=(window.devicePixelRatio||1),sx=canvas.width/(r.width*dpr),sy=canvas.height/(r.height*dpr); if(uiLocked) return; pick((e.clientX-r.left)*sx,(e.clientY-r.top)*sy); e.preventDefault();});
+      canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect(),dpr=(window.devicePixelRatio||1),sx=canvas.width/(r.width*dpr),sy=canvas.height/(r.height*dpr); move((e.clientX-r.left)*sx,(e.clientY-r.top)*sy);});
+      canvas.addEventListener('mouseup',()=>drop());
+      canvas.addEventListener('touchstart',e=>{const t=e.touches[0],r=canvas.getBoundingClientRect(),dpr=(window.devicePixelRatio||1),sx=canvas.width/(r.width*dpr),sy=canvas.height/(r.height*dpr); if(uiLocked) return; pick((t.clientX-r.left)*sx,(t.clientY-r.top)*sy); e.preventDefault();},{passive:false});
+      canvas.addEventListener('touchmove',e=>{const t=e.touches[0],r=canvas.getBoundingClientRect(),dpr=(window.devicePixelRatio||1),sx=canvas.width/(r.width*dpr),sy=canvas.height/(r.height*dpr); move((t.clientX-r.left)*sx,(t.clientY-r.top)*sy); e.preventDefault();},{passive:false});
+      canvas.addEventListener('touchend',()=>drop());
+    }
+
+    /* Resize —— 用容器寬度，容器已被 CSS 限制為 max-width: 90vh */
+    function resizeCanvas(){
+      const rect = gameContainer.getBoundingClientRect();
+      const displayW = Math.floor(rect.width);               // ← 受 .game-container: max-width:90vh 限制
+      const displayH = Math.min(
+        Math.round(displayW * 1.08),                         // 既有比例
+        Math.round(window.innerHeight * 0.90)                // 仍不超過 90vh
+      );
+      const dpr = window.devicePixelRatio || 1;
+      canvas.style.width  = displayW + 'px';
+      canvas.style.height = displayH + 'px';
+      canvas.width  = Math.round(displayW * dpr);
+      canvas.height = Math.round(displayH * dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      applyScale(displayW);
+      initGame();
+      positionAllInputs();
+    }
+
+    /* Wire buttons */
+
+    startButton.addEventListener('click',()=>{SFX.unlock(); startFlow();});
+    nextProblemButton.addEventListener('click',nextProblem);
+
+    window.addEventListener('load',()=>{addPointerEvents(); resizeCanvas();});
+    window.addEventListener('resize',resizeCanvas);
+  </script>
+</body>
+</html>
