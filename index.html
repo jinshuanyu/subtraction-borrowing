@@ -220,14 +220,14 @@
     }
     /* 關閉訊息後，保證輸入框存在 */
     function ensureInputsForCurrentStep(){
-      if(currentStep===1){
-        ensureInputForTarget('row2_units', problem.decomposedUnits);
-      }else if(currentStep===2 && isFilled(['subtract_10','subtract_subtrahend','remainder_result'])){
-        // Step 2 已完成，預先生成 Step 3 的輸入框
-        ensureInputForTarget('final_answer', problem.difference);
-      } else if(currentStep===1 && isFilled(['row2_ten','row2_units'])){
+      if(currentStep===1 && isFilled(['row2_ten','row2_units'])){
         // Step 1 已完成，預先生成 Step 2 的輸入框
         ensureInputForTarget('remainder_result', problem.remainder);
+      } else if(currentStep===2 && isFilled(['subtract_10','subtract_subtrahend','remainder_result'])){
+        // Step 2 已完成，預先生成 Step 3 的輸入框
+        ensureInputForTarget('final_answer', problem.difference);
+      } else if(currentStep===1){
+        ensureInputForTarget('row2_units', problem.decomposedUnits);
       }
     }
     messageCloseButton.addEventListener('click',()=>{
@@ -305,7 +305,7 @@
       ctx.beginPath(); ctx.arc(ansDrop.x+ansDrop.width/2, ansDrop.y+ansDrop.height/2, BLOCK_RADIUS*TOP_SCALE, 0, Math.PI*2);
       if(currentStep===4){ drawNumberBlock(ansDrop.x+ansDrop.width/2, ansDrop.y+ansDrop.height/2, problem.difference, COLOR_ANSWER, TOP_SCALE); }
       else{ ctx.strokeStyle=COLOR_TARGET_BORDER; ctx.lineWidth=2.4*SCALE; ctx.stroke();
-            ctx.fillStyle='#6b7280'; ctx.font=`${FONT_SIZE_SMALL}px "Inter",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('?', ans.x+ansDrop.width/2, ansDrop.y+ansDrop.height/2); }
+            ctx.fillStyle='#6b7280'; ctx.font=`${FONT_SIZE_SMALL}px "Inter",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('?', ansDrop.x+ansDrop.width/2, ansDrop.y+ansDrop.height/2); }
     }
 
     function depsReadyForInput(targetId){
@@ -323,6 +323,8 @@
       drawLine(start.x-dx,start.y, targetTopCenter(tUnits).x, targetTopCenter(tUnits).y);
       drawLine(start.x+dx,start.y, targetTopCenter(tTen).x,   targetTopCenter(tTen).y);
       drawTargetBox(tUnits,COLOR_MAIN,'個位數'); drawTargetBox(tTen,COLOR_MAIN,'10');
+      /* 立即建立輸入框（不受 uiLocked 影響） */
+      if(USE_INPUT_MODE){ ensureInputForTarget('row2_units',problem.decomposedUnits); }
     }
 
     function drawRow3(){
@@ -331,6 +333,7 @@
       const tenSrc=dropTargets.find(t=>t.id==='row2_ten'); drawLine(targetBottomCenter(tenSrc).x,targetBottomCenter(tenSrc).y, targetTopCenter(t10).x,targetTopCenter(t10).y);
       const subFrom=circleBottom(topPositions.subtrahendX,Y_POS_PROBLEM,BLOCK_RADIUS*TOP_SCALE); drawLine(subFrom.x,subFrom.y, targetTopCenter(tSub).x,targetTopCenter(tSub).y);
       drawTargetBox(t10,COLOR_MAIN,'10'); drawSymbolBetween(t10,tSub,Y_POS_ROW3,'−'); drawTargetBox(tSub,COLOR_SUBTRAHEND,'減數'); drawSymbolBetween(tSub,tRem,Y_POS_ROW3,'='); drawTargetBox(tRem,COLOR_REMAINDER,'剩下');
+      if(USE_INPUT_MODE && t10.filled && tSub.filled){ ensureInputForTarget('remainder_result',problem.remainder); }
     }
 
     function drawRow4(){
@@ -340,12 +343,13 @@
       drawLine(targetBottomCenter(uSrc).x,targetBottomCenter(uSrc).y, targetTopCenter(aU).x,targetTopCenter(aU).y);
       drawLine(targetBottomCenter(rSrc).x,targetBottomCenter(rSrc).y, targetTopCenter(aR).x,targetTopCenter(aR).y);
       drawTargetBox(aU,COLOR_MAIN,'個位數'); drawSymbolBetween(aU,aR,Y_POS_ROW4,'+'); drawTargetBox(aR,COLOR_REMAINDER,'剩下'); drawSymbolBetween(aR,aF,Y_POS_ROW4,'='); drawTargetBox(aF,COLOR_ANSWER,'答案');
+      if(USE_INPUT_MODE && aU.filled && aR.filled){ ensureInputForTarget('final_answer',problem.difference); }
     }
 
     /* ======= 輸入（手機：即時提交；不受 uiLocked 阻擋） ======= */
     function ensureInputForTarget(targetId, expectedValue){
       const t=dropTargets.find(x=>x.id===targetId);
-      if(!t || t.filled || inputMap.has(targetId) || uiLocked) return;
+      if(!t || t.filled || inputMap.has(targetId)) return;
       if(!depsReadyForInput(targetId)) return;
 
       const inp=document.createElement('input');
@@ -377,6 +381,7 @@
       inp.addEventListener('blur', () => { isInputFocused = false; });
 
       positionInputOverTarget(targetId); requestAnimationFrame(()=>positionInputOverTarget(targetId));
+      /* 即使訊息框還開著，也先把輸入框建立起來 */
       setTimeout(()=>{ try{ inp.focus(); }catch{} }, 60);
     }
 
