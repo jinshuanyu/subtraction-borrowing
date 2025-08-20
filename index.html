@@ -219,17 +219,18 @@
       messageTitle.textContent=title; messageContent.textContent=content; messageBox.style.display='block';
     }
     /* 關閉訊息後，保證輸入框存在 */
-    function ensureInputsForCurrentStep(){
-      if(currentStep===1){
+function ensureInputsForCurrentStep(){
+      /* 新增邏輯：如果當前步驟已完成，且下一個步驟
+         的輸入框還未生成，則預先生成它。
+      */
+      if(currentStep===1 && isFilled(['row2_ten','row2_units'])){
+        // Step 1 已完成，預先生成 Step 2 的輸入框
+        ensureInputForTarget('remainder_result', problem.remainder);
+      } else if(currentStep===2 && isFilled(['subtract_10','subtract_subtrahend','remainder_result'])){
+        // Step 2 已完成，預先生成 Step 3 的輸入框
+        ensureInputForTarget('final_answer', problem.difference);
+      } else if(currentStep===1){
         ensureInputForTarget('row2_units', problem.decomposedUnits);
-      }else if(currentStep===2){
-        const t10 = dropTargets.find(t=>t.id==='subtract_10')?.filled;
-        const ts  = dropTargets.find(t=>t.id==='subtract_subtrahend')?.filled;
-        if(t10 && ts) ensureInputForTarget('remainder_result', problem.remainder);
-      }else if(currentStep===3){
-        const au = dropTargets.find(t=>t.id==='add_units')?.filled;
-        const ar = dropTargets.find(t=>t.id==='add_remainder')?.filled;
-        if(au && ar) ensureInputForTarget('final_answer', problem.difference);
       }
     }
     messageCloseButton.addEventListener('click',()=>{
@@ -565,3 +566,4 @@
   </script>
 </body>
 </html>
+
