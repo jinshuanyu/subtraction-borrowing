@@ -249,16 +249,16 @@ function ensureInputsForCurrentStep(){
     let BLOCK_RADIUS=26, TOP_SCALE=1.22, TARGET_WIDTH=96, TARGET_HEIGHT=68;
     let FONT_SIZE_LARGE=30, FONT_SIZE_MEDIUM=22, FONT_SIZE_SMALL=16;
 
-    function applyScale(w){
-      /* 更保守：小手機最低縮到 0.58 */
-      SCALE = Math.max(0.58, Math.min(1.0, w/600));
+function applyScale(w){
+      /* 調整：手機最低縮到 0.70；基底字體也調大 */
+      SCALE = Math.max(0.70, Math.min(1.0, w/600));
       BLOCK_RADIUS = Math.round(26*SCALE);
       TOP_SCALE    = 1.22;
       TARGET_WIDTH = Math.round(96*SCALE);
       TARGET_HEIGHT= Math.round(68*SCALE);
-      FONT_SIZE_LARGE  = Math.round(30*SCALE);
-      FONT_SIZE_MEDIUM = Math.round(22*SCALE);
-      FONT_SIZE_SMALL  = Math.max(14, Math.round(16*SCALE));
+      FONT_SIZE_LARGE  = Math.round(34*SCALE);  // 從 30 調整為 34
+      FONT_SIZE_MEDIUM = Math.round(26*SCALE);  // 從 22 調整為 26
+      FONT_SIZE_SMALL  = Math.max(14, Math.round(18*SCALE)); // 從 16 調整為 18
     }
 
     /* 配色（4色） */
@@ -566,4 +566,5 @@ function ensureInputsForCurrentStep(){
   </script>
 </body>
 </html>
+
 
