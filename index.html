@@ -41,15 +41,19 @@
 
     /* ===== 遊戲寬度硬限制（重點修正） =====
        舊裝置用 vw/vh，支援新版瀏覽器則用 svw/svh，哪個小取哪個 */
-    .game-container{
-      width:100%;
-      /* 舊單位 fallback */
-      max-width: min(100vw, 90vh, 980px);
-      margin:0 auto; padding:12px; background:transparent; position:relative;
-      /* 手機上稍微往下和往左移動，避免與計數器重疊 */
-      margin-top: 8px;
-      padding-left: 8px;
-    }
+.game-container{
+  width:100%;
+  /* 舊單位 fallback */
+  max-width: min(100vw, 90vh, 980px);
+  margin:0 auto; 
+  padding:12px;  /* ✅ 四邊統一 padding */
+  background:transparent; 
+  position:relative;
+  /* 手機上稍微往下移動，避免與計數器重疊 */
+  margin-top: 8px;
+  /* ✅ 刪除這行，讓左右對稱 */
+  /* padding-left: 8px; */
+}
 
     @supports (width: 100svw) {
       .game-container {
@@ -617,8 +621,8 @@
       const rect = gameContainer.getBoundingClientRect();
       const displayW = Math.floor(rect.width);  // 就依容器寬
       const displayH = Math.min(
-        Math.round(displayW * 1.08),
-        Math.round((window.innerHeight || document.documentElement.clientHeight) * 0.90)
+        Math.round(displayW * 0.92),
+        Math.round((window.innerHeight || document.documentElement.clientHeight) * 0.82)
       );
       const dpr = window.devicePixelRatio || 1;
       canvas.style.width  = displayW + 'px';
@@ -648,6 +652,7 @@
   </script>
 </body>
 </html>
+
 
 
 
