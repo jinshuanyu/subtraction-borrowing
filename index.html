@@ -625,8 +625,8 @@ function resizeCanvas(){
   const isMobile = displayW < 768;  // 768px 以下視為手機
   
   const displayH = Math.min(
-    Math.round(displayW * (isMobile ? 1.15 : 0.92)),  // ✅ 手機用 1.15，桌機用 0.92
-    Math.round((window.innerHeight || document.documentElement.clientHeight) * 0.85)
+    Math.round(displayW * (isMobile ? 1.15 : 0.75)),  // ✅ 手機用 1.15，桌機用 0.75
+    Math.round((window.innerHeight || document.documentElement.clientHeight) * 0.78)
   );
   
   const dpr = window.devicePixelRatio || 1;
@@ -657,6 +657,7 @@ function resizeCanvas(){
   </script>
 </body>
 </html>
+
 
 
 
