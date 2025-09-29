@@ -64,7 +64,7 @@
 
     canvas{
       display:block; width:100%; height:auto;
-      background:#f1f6fa; border-radius:10px; touch-action:none;
+      background:#f1f6fa; border-radius:0; touch-action:none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
       -webkit-tap-highlight-color: transparent;
@@ -615,25 +615,30 @@
     }
 
     /* 依容器寬高設定 canvas（完全不可能超寬） */
-    function resizeCanvas(){
-      if(isInputFocused) return; /* 如果輸入框處於焦點狀態，直接返回 */
-      
-      const rect = gameContainer.getBoundingClientRect();
-      const displayW = Math.floor(rect.width);  // 就依容器寬
-      const displayH = Math.min(
-        Math.round(displayW * 0.92),
-        Math.round((window.innerHeight || document.documentElement.clientHeight) * 0.82)
-      );
-      const dpr = window.devicePixelRatio || 1;
-      canvas.style.width  = displayW + 'px';
-      canvas.style.height = displayH + 'px';
-      canvas.width  = Math.round(displayW * dpr);
-      canvas.height = Math.round(displayH * dpr);
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-      applyScale(displayW);
-      initGame();
-      positionAllInputs();
-    }
+function resizeCanvas(){
+  if(isInputFocused) return;
+  
+  const rect = gameContainer.getBoundingClientRect();
+  const displayW = Math.floor(rect.width);
+  
+  // ✅ 判斷是手機還是桌機
+  const isMobile = displayW < 768;  // 768px 以下視為手機
+  
+  const displayH = Math.min(
+    Math.round(displayW * (isMobile ? 1.15 : 0.92)),  // ✅ 手機用 1.15，桌機用 0.92
+    Math.round((window.innerHeight || document.documentElement.clientHeight) * 0.85)
+  );
+  
+  const dpr = window.devicePixelRatio || 1;
+  canvas.style.width  = displayW + 'px';
+  canvas.style.height = displayH + 'px';
+  canvas.width  = Math.round(displayW * dpr);
+  canvas.height = Math.round(displayH * dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  applyScale(displayW);
+  initGame();
+  positionAllInputs();
+}
 
     /* 按鈕連結 */
     startButton.addEventListener('click',()=>{SFX.unlock(); startFlow();});
@@ -652,6 +657,7 @@
   </script>
 </body>
 </html>
+
 
 
 
