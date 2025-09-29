@@ -2,8 +2,9 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"/>
   <title>退位減法練習</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     /* 全域：避免任何水平溢出 */
     *{ box-sizing:border-box; }
@@ -24,7 +25,12 @@
     .btn-ghost{ background:#eef2ff; color:#4f46e5; border:none; border-radius:12px; padding:12px 18px; font-weight:800; cursor:pointer }
 
     /* 計數與慶祝（純視覺） */
-    #roundsBadge{ position:fixed; right:8px; top:8px; z-index:1600; background:#6a0dad; color:#fff; font-weight:700; padding:4px 8px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); font-size:12px; }
+    #roundsBadge{ 
+      position:fixed; 
+      top: max(8px, env(safe-area-inset-top));
+      right: max(8px, env(safe-area-inset-right));
+      z-index:1600; background:#6a0dad; color:#fff; font-weight:700; padding:4px 8px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.18); font-size:12px; 
+    }
     #confettiCanvas{ position:fixed; inset:0; z-index:2200; pointer-events:none; display:none; }
     #applauseOverlay{ position:fixed; inset:0; display:none; z-index:2300; align-items:center; justify-content:center; pointer-events:none; }
     #applauseInner{ background:rgba(255,255,255,.92); border-radius:16px; padding:18px 22px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.18); animation:popIn .35s ease-out; }
@@ -39,17 +45,25 @@
       width:100%;
       /* 舊單位 fallback */
       max-width: min(100vw, 90vh, 980px);
-      /* 新單位優先（會覆蓋上面那行） */
-      max-width: min(100svw, 90svh, 980px);
       margin:0 auto; padding:12px; background:transparent; position:relative;
       /* 手機上稍微往下和往左移動，避免與計數器重疊 */
       margin-top: 8px;
       padding-left: 8px;
     }
 
+    @supports (width: 100svw) {
+      .game-container {
+        /* 新單位優先（會覆蓋上面那行） */
+        max-width: min(100svw, 90svh, 980px);
+      }
+    }
+
     canvas{
       display:block; width:100%; height:auto;
       background:#f1f6fa; border-radius:10px; touch-action:none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .controls{
@@ -57,7 +71,8 @@
       flex-wrap:wrap;   /* 手機窄時自動換行，避免超寬 */
     }
 
-    .btn{ padding:8px 14px; font-size:.95rem; font-weight:600; border-radius:10px; border:none; color:#fff; background:#6a0dad }
+    .btn{ padding:8px 14px; font-size:.95rem; font-weight:600; border-radius:10px; border:none; color:#fff; background:#6a0dad; cursor:pointer; }
+    .btn.btn-secondary{ background:#eef2ff; color:#4f46e5; }
     .btn:disabled{ opacity:.5; cursor:not-allowed }
 
     /* 直接疊在目標框內的輸入框（避免對齊問題） */
@@ -77,7 +92,7 @@
     }
     .message-box h3{ font-size:1rem; margin:0 0 .35rem; color:#6a0dad }
     .message-box p{ margin:.2rem 0 .7rem }
-    .message-box button{ background:#10b981; color:#fff; border:none; border-radius:8px; padding:8px 14px }
+    .message-box button{ background:#10b981; color:#fff; border:none; border-radius:8px; padding:8px 14px; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -88,10 +103,17 @@
       <div class="actions">
         <button id="goPlay" class="btn-solid">開始遊戲</button>
         <button id="goHowTo" class="btn-ghost">遊戲說明</button>
-        <footer style="display:block;width:100%;margin-top:20px;font-size:0.8em;color:#666;text-align:center;">
-          © 2025 Christina Yu. All rights reserved.
-        </footer>
       </div>
+      <footer style="margin-top:24px; text-align:center; font-size:14px; color:#555;">
+        <div style="margin-top:10px; font-size:12px; color:#888;">
+          © 2025 Christina Yu. All rights reserved.
+        </div>
+        <div style="margin-top:10px; font-size:12px; color:#888;">
+          <a href="mailto:mamahowma@gmail.com"><i class="fa-solid fa-envelope fa-xl fa-fw"></i></a>　
+          <a href="https://www.facebook.com/mamahowma" target="_blank"><i class="fa-brands fa-facebook fa-xl fa-fw"></i></a>　
+          <a href="https://portaly.cc/mamahowma/support" target="_blank"><i class="fa-solid fa-mug-hot fa-xl fa-fw"></i></a>
+        </div>
+      </footer>
     </div>
   </div>
 
@@ -122,6 +144,10 @@
     <div class="controls">
       <button id="startButton" class="btn">開始計算▶️</button>
       <button id="nextProblemButton" class="btn" disabled>下一題⭐</button>
+    </div>
+    <div class="controls">
+      <button id="backToHomeFromGame" class="btn btn-secondary">回到首頁</button>
+      <button id="showInstructionsFromGame" class="btn btn-secondary">遊戲說明</button>
     </div>
   </div>
 
@@ -199,6 +225,8 @@
     const backHome=document.getElementById('backHome');
     const howToPlay=document.getElementById('howToPlay');
     const gameContainer=document.getElementById('gameContainer');
+    const backToHomeFromGame = document.getElementById('backToHomeFromGame');
+    const showInstructionsFromGame = document.getElementById('showInstructionsFromGame');
 
     function showFront(){frontPage.style.display='flex';howToPage.style.display='none';gameContainer.style.display='none';}
     function showHowTo(){frontPage.style.display='none';howToPage.style.display='flex';gameContainer.style.display='none';}
@@ -214,6 +242,9 @@
     goHowTo.onclick=()=>{SFX.unlock();showHowTo();};
     backHome.onclick=()=>{showFront();};
     howToPlay.onclick=()=>{SFX.unlock();showGame();};
+    backToHomeFromGame.onclick = ()=>{SFX.unlock(); showFront();};
+    showInstructionsFromGame.onclick = ()=>{SFX.unlock(); showHowTo();};
+
 
     /* ======= 計數與慶祝 ======= */
     const roundsBadge=document.getElementById('roundsBadge');
@@ -223,8 +254,10 @@
     function triggerCelebration(){
       applauseOverlay.style.display='flex'; confettiCanvas.style.display='block';
       cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const confettiCount = isIOS ? 90 : 180;
       const parts=[]; const colors=['#fbbf24','#34d399','#60a5fa','#f472b6','#f87171','#a78bfa'];
-      for(let i=0;i<180;i++){parts.push({x:Math.random()*confettiCanvas.width,y:-20-Math.random()*200,r:3+Math.random()*4,c:colors[Math|Math.random()*colors.length],vx:-1+Math.random()*2,vy:2+Math.random()*3,a:.8+Math.random()*.2,rot:Math.random()*Math.PI*2,vr:-.1+Math.random()*.2});}
+      for(let i=0;i<confettiCount;i++){parts.push({x:Math.random()*confettiCanvas.width,y:-20-Math.random()*200,r:3+Math.random()*4,c:colors[Math|Math.random()*colors.length],vx:-1+Math.random()*2,vy:2+Math.random()*3,a:.8+Math.random()*.2,rot:Math.random()*Math.PI*2,vr:-.1+Math.random()*.2});}
       function tick(){
         cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
         parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;cctx.save();cctx.globalAlpha=p.a;cctx.translate(p.x,p.y);cctx.rotate(p.rot);cctx.fillStyle=p.c;cctx.fillRect(-p.r,-p.r,p.r*2,p.r*2);cctx.restore();});
@@ -332,7 +365,7 @@
       ctx.beginPath(); ctx.arc(ansDrop.x+ansDrop.width/2, ansDrop.y+ansDrop.height/2, BLOCK_RADIUS*TOP_SCALE, 0, Math.PI*2);
       if(currentStep===4){ drawNumberBlock(ansDrop.x+ansDrop.width/2, ansDrop.y+ansDrop.height/2, problem.difference, COLOR_ANSWER, TOP_SCALE); }
       else{ ctx.strokeStyle=COLOR_TARGET_BORDER; ctx.lineWidth=2.4*SCALE; ctx.stroke();
-            ctx.fillStyle='#6b7280'; ctx.font=`${FONT_SIZE_SMALL}px "Inter",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('?', ansDrop.x+ansDrop.width/2, ansDrop.y+ansDrop.height/2); }
+            ctx.fillStyle='#6b7280'; ctx.font=`${FONT_SIZE_SMALL}px "Inter",sans-serif`; ctx.textAlign='center';ctx.textBaseline='middle'; ctx.fillText('?', ansDrop.x+ansDrop.width/2, ansDrop.y+ansDrop.height/2); }
     }
 
     function depsReadyForInput(targetId){
@@ -381,6 +414,7 @@
 
       const inp=document.createElement('input');
       inp.className='floating-input'; inp.type='tel'; inp.inputMode='numeric'; inp.placeholder='?';
+      inp.pattern = '[0-9]*';
       inp.autocomplete='off'; inp.autocapitalize='off'; inp.spellcheck=false;
       gameContainer.appendChild(inp); inputMap.set(targetId,inp);
 
@@ -408,8 +442,6 @@
       inp.addEventListener('blur', () => { isInputFocused = false; });
 
       positionInputOverTarget(targetId); requestAnimationFrame(()=>positionInputOverTarget(targetId));
-      /* 即使訊息框還開著，也先把輸入框建立起來 */
-      setTimeout(()=>{ try{ inp.focus(); }catch{} }, 60);
     }
 
     function positionInputOverTarget(targetId){
@@ -585,6 +617,14 @@
     window.addEventListener('load',()=>{addPointerEvents(); resizeCanvas();});
     window.addEventListener('resize',resizeCanvas);
     window.addEventListener('orientationchange',()=>setTimeout(resizeCanvas, 80));
+    
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        // This helps handle the virtual keyboard on iOS better
+        setTimeout(positionAllInputs, 100);
+      });
+    }
   </script>
 </body>
 </html>
+
