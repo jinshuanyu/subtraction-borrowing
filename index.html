@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>退位減法練習</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     /* 全域：避免任何水平溢出 */
     *{ box-sizing:border-box; }
@@ -88,9 +89,31 @@
       <div class="actions">
         <button id="goPlay" class="btn-solid">開始遊戲</button>
         <button id="goHowTo" class="btn-ghost">遊戲說明</button>
-        <footer style="display:block;width:100%;margin-top:20px;font-size:0.8em;color:#666;text-align:center;">
-          © 2025 Christina Yu. All rights reserved.
-        </footer>
+        
+<footer style="margin-top:24px; padding:16px; text-align:center; font-size:14px; color:#555;">
+  <div style="margin-bottom:12px;">
+    <!-- 你的 icons 和連結 -->
+    <a href="https://www.mamahowma.com" target="_blank" aria-label="Blog" style="margin:0 8px; color:#7c3aed;">
+      <i class="fas fa-house fa-2x"></i>
+    </a>
+    <a href="mailto:mamahowma@gmail.com" aria-label="Email" style="margin:0 8px; color:#7c3aed;">
+      <i class="fas fa-envelope fa-2x"></i>
+    </a>
+    <a href="https://facebook.com/mamahowma" target="_blank" aria-label="Facebook" style="margin:0 8px; color:#7c3aed;">
+      <i class="fab fa-facebook fa-2x"></i>
+    </a>
+  </div>
+
+  <!-- 回到首頁 / 遊戲說明 按鈕 -->
+  <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+    <button onclick="showFront()" class="btn-ghost">回到首頁</button>
+    <button onclick="showHowTo()" class="btn-solid">遊戲說明</button>
+  </div>
+
+  <div style="margin-top:10px; font-size:12px; color:#888;">
+    © 2025 Christina Yu. All rights reserved.
+  </div>
+</footer>
       </div>
     </div>
   </div>
@@ -588,3 +611,4 @@
   </script>
 </body>
 </html>
+
