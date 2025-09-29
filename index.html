@@ -268,7 +268,7 @@
         if(parts.some(p=>p.y<confettiCanvas.height+20)) requestAnimationFrame(tick);
       }
       requestAnimationFrame(tick);
-      setTimeout(()=>{cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);confettiCanvas.style.display='none';applauseOverlay.style.display='none';},2400);
+      setTimeout(()=>{confettiCanvas.style.display='none';applauseOverlay.style.display='none';},2400);
     }
 
     /* ======= 遊戲核心（含手機修正） ======= */
@@ -657,6 +657,7 @@ function resizeCanvas(){
   </script>
 </body>
 </html>
+
 
 
 
