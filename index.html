@@ -46,7 +46,7 @@
   /* 舊單位 fallback */
   max-width: min(100vw, 90vh, 980px);
   margin:0 auto; 
-  padding:12px;  /* ✅ 四邊統一 padding */
+ padding:12px 12px 12px 0;  /* ✅ 改為：上12px 右12px 下12px 左0 */
   background:transparent; 
   position:relative;
   /* 手機上稍微往下移動，避免與計數器重疊 */
@@ -657,6 +657,7 @@ function resizeCanvas(){
   </script>
 </body>
 </html>
+
 
 
 
